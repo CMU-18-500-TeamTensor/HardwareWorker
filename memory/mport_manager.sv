@@ -1,13 +1,31 @@
+`default_nettype none
 
+`ifndef MHANDLE
+`include "mem_handle.vh"
+`define MHANDLE
+`endif
 
 module mport_manager
   (input  logic        clk, w_en, r_en, write_through,
    input  logic [25:2] addr,
    input  logic [31:0] data_store,
-   output logic [31:0] data_read,
+   output logic [31:0] data_load,
    output logic        done,
 
-   );
+   // SDRAM interface
+   output logic        SDRAM_pll_locked,
+   input  logic        SDRAM_ready,
+   output logic        SDRAM_as, SDRAM_rw,
+   output logic [22:0] SDRAM_addr,
+   output logic [15:0] SDRAM_data_write,
+   input  logic [15:0] SDRAM_data_read,
+   input  logic        SDRAM_done,
+
+   // m9k interface
+   output logic        m9k_w_en, m9k_write_through,
+   output logic [25:2] m9k_addr,
+   output logic [31:0] m9k_data_store,
+   input  logic [31:0] m9k_data_load);
 
 
 /*module cache(input               clk, w_en, write_through,
@@ -22,36 +40,15 @@ module mport_manager
              output logic        mem_w_en, mem_r_en,
              output logic [25:2] mem_addr);*/
 
-  /*
-  module m9k_controller(input               clk, w_en,
-                      input  logic [14:2] addr,
-                      input  logic [31:0] data_store,
-                      output logic [31:0] data_load);
-  */
+  logic cache_hit;
 
-  
-  /*
-  module sdram
-  (input logic clk, rst_l, pll_locked,
-   input  logic [3:0]  KEY,
-   input  logic        CLOCK_50, DRAM_CLK,
-   output logic        DRAM_CKE, DRAM_CAS_N, DRAM_CS_N, DRAM_LDQM, 
-                       DRAM_UDQM, DRAM_RAS_N, DRAM_WE_N,
-   output logic [12:0] DRAM_ADDR,
-   output logic [1:0]  DRAM_BA,
-   inout  wire  [15:0] DRAM_DQ,
-   output logic        ready,
-   input  logic        as, rw,
-   input  logic [22:0] addr,
-   input  logic [15:0] data_write,
-   output logic [15:0] data_read,
-   output logic        done);
-  */
+  // Actual memory input/output
+  logic [`CACHE_BITS-1:2][31:0] line_read;
+  logic [`CACHE_BITS-1:2][31:0] line_store;
+  logic        mem_ready, mem_done;
+  logic        mem_w_en, mem_r_en;
+  logic [25:2] mem_addr;
 
-  cache c();
-
-  sdram sdram_c();
-  
-  M9KController m9k_c();
+  cache c(.*);
 
 endmodule : mport_manager

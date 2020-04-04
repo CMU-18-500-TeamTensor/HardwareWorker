@@ -1,37 +1,44 @@
-#DEFINE CACHE_BITS 16
+`default_nettype none
 
-module cache(input               clk, w_en, write_through,
+`define CACHE_BITS 8
+
+`ifndef MHANDLE
+`include "mem_handle.vh"
+`define MHANDLE
+`endif
+
+module cache(input               clk, w_en, r_en, write_through,
              input  logic [25:2] addr,
              input  logic [31:0] data_store,
              output logic [31:0] data_load,
              output logic        done, cache_hit,
              // Actual memory input/output
-             input  logic [CACHE_BITS-1:2][31:0] line_read,
-             output logic [CACHE_BITS-1:2][31:0] line_store,
+             input  logic [`CACHE_BITS-1:2][31:0] line_read,
+             output logic [`CACHE_BITS-1:2][31:0] line_store,
              input  logic        mem_ready, mem_done,
              output logic        mem_w_en, mem_r_en,
              output logic [25:2] mem_addr);
 
-  reg [CACHE_BITS-1:2] M [31:0];
+  logic [`CACHE_BITS-1:2][31:0] M;
 
-  reg [25:CACHE_BITS] line_addr;
+  logic [25:`CACHE_BITS] line_addr;
 
   enum logic [15:0] {WAIT, W_HIT, R_HIT, W_MISS, R_MISS, 
                      W_MISS_DONE, R_MISS_DONE} state, nextState;
 
-  logic [CACHE_BITS-1:0] line_requested;
-  assign line_requested = addr[25:25-CACHE_BITS];
+  logic [`CACHE_BITS-1:0] line_requested;
+  assign line_requested = addr[25:25-`CACHE_BITS];
 
   assign cache_hit = (state == W_HIT) || (state == R_HIT);
 
   // nextState logic
   always_comb begin
-    switch(state) {
-      case WAIT: begin
+    unique case(state)
+      WAIT: begin
         if (w_en && (line_addr == line_requested) && 
             !write_through) begin
           // Line hit, write to cache
-          nextState = LINE_W;
+          nextState = W_HIT;
         end
         else if(w_en && ((line_addr != line_requested) || write_through)) begin
           // Line miss / write through on a write
@@ -50,11 +57,11 @@ module cache(input               clk, w_en, write_through,
           nextState = WAIT;
         end
       end
-      case W_HIT: begin
+      W_HIT: begin
         // Writes are single-cycle, so nextState is always WAIT.
         nextState = WAIT;
       end
-      case W_MISS: begin
+      W_MISS: begin
         if(mem_done) begin
           nextState = WAIT;
         end
@@ -62,11 +69,11 @@ module cache(input               clk, w_en, write_through,
           nextState = W_MISS;
         end
       end
-      case R_HIT: begin
+      R_HIT: begin
         // Reads from cache are always single-cycle
         nextState = WAIT;
       end
-      case R_MISS: begin
+      R_MISS: begin
         if(mem_done) begin
           nextState = WAIT;
         end
@@ -74,22 +81,18 @@ module cache(input               clk, w_en, write_through,
           nextState = W_MISS;
         end
       end
-    }
+    endcase
   end
 
   // Cache memory logic
   always_ff @(posedge clk) begin
-    if(w_en && line_addr == addr[25:CACHE_BITS]) begin
+    if(w_en && line_addr == addr[25:`CACHE_BITS]) begin
       // Write and line hit
       M[addr] <= data_store;
     end
-    else begin
-      // M9K read
-      data_load <= M[addr[25-CACHE_BITS-1:2]];
-    end
     if(state == R_MISS && mem_done) begin
       M <= line_read;
-    }
+    end
   end
 
   // External memory control logic
@@ -101,19 +104,20 @@ module cache(input               clk, w_en, write_through,
     mem_r_en = 1'b0;
     mem_addr = addr;
 
-    switch(state): {
-      case W_MISS: begin
+    case(state)
+      W_MISS: begin
         line_store = M;
         done = mem_done;
         mem_w_en = w_en;
         mem_addr = addr;
       end
-      case R_MISS: begin
-        data_load = line_read[addr[25-CACHE_BITS-1:2]];
+      R_MISS: begin
+        data_load = line_read[addr[25-`CACHE_BITS-1:2]];
         done = mem_done;
         mem_r_en = r_en;
         mem_addr = addr;
-    }
+      end
+    endcase
   end
 
 endmodule: cache
