@@ -11,17 +11,17 @@ module SDRAMController
    output logic ready,
    input  logic [9:0] SW,
    output logic [6:0] HEX0, HEX1, HEX2, HEX3,
-	input  logic        cpu0_SDRAM_as, cpu0_SDRAM_rw, cpu1_SDRAM_as, cpu1_SDRAM_rw,
-   input  logic [22:0] cpu0_SDRAM_addr, cpu1_SDRAM_addr,
-   input  logic [15:0] cpu0_SDRAM_data_write, cpu1_SDRAM_data_write,
-   output logic [15:0] cpu0_SDRAM_data_read, cpu1_SDRAM_data_read,
-   output logic cpu0_SDRAM_done, cpu1_SDRAM_done);
+	input  logic        cpu0_SDRAM_as, cpu0_SDRAM_rw,
+   input  logic [22:0] cpu0_SDRAM_addr,
+   input  logic [15:0] cpu0_SDRAM_data_write,
+   output logic [15:0] cpu0_SDRAM_data_read,
+   output logic cpu0_SDRAM_done);
   
   logic [31:0] COUNTER;
   
-  logic        reg_cpu0_SDRAM_as, reg_cpu0_SDRAM_rw, reg_cpu1_SDRAM_as, reg_cpu1_SDRAM_rw;
-  logic [22:0] reg_cpu0_SDRAM_addr, reg_cpu1_SDRAM_addr;
-  logic [15:0] reg_cpu0_SDRAM_data_write, reg_cpu1_SDRAM_data_write;
+  logic        reg_cpu0_SDRAM_as, reg_cpu0_SDRAM_rw;
+  logic [22:0] reg_cpu0_SDRAM_addr;
+  logic [15:0] reg_cpu0_SDRAM_data_write;
   
   
   // Tri-state driver logic for the DQ wires
@@ -78,7 +78,7 @@ module SDRAMController
   
   RefreshFSM refreshfsm(.*);
 
-  enum logic [15:0] {UNINIT, INITIALIZING, READY, READING0, WRITING0, READING1, WRITING1, SHOW0, SHOW1, REFRESHING} state, nextState;
+  enum logic [15:0] {UNINIT, INITIALIZING, READY, READING0, WRITING0, SHOW0, REFRESHING} state, nextState;
 
   logic [31:0] cycle_counter, counter;
 
@@ -104,18 +104,8 @@ module SDRAMController
       WRITING0: begin
         nextState = (write_done) ? SHOW0 : WRITING0;
       end
-		READING1: begin
-        nextState = (read_done) ? SHOW1 : READING1;
-      end
-      WRITING1: begin
-        nextState = (write_done) ? SHOW1 : WRITING1;
-      end
 		SHOW0: begin
 		  nextState = (counter == 16'd7) ? ((cycle_counter >= 32'd760) ? REFRESHING : READY) : SHOW0;
-		end
-		SHOW1: begin
-		  nextState = (counter == 16'd7) ? ((reg_cpu0_SDRAM_as) ? ((reg_cpu0_SDRAM_rw) ? READING0 : WRITING0) : 
-		                                    ((cycle_counter >= 32'd760) ? REFRESHING : READY)) : SHOW1;
 		end
       REFRESHING: begin
         nextState = (refresh_done) ? READY : REFRESHING;
@@ -153,35 +143,15 @@ module SDRAMController
           //data_in_valid = 1;
         end
       end
-		READING1: begin
-        // Hecka hacky, but the idea is that we activate go for >=1 cc, and it isn't
-        // active when done is active, because at that point the FSM is in the START
-        // state and ready to go into another loop
-        read_go = ~read_done;
-
-        if(read_done) begin
-			 //data_in = read_data;
-          //data_in_valid = 1;
-        end
-      end
       WRITING0: begin
         // Hecka hacky, but the idea is that we activate go for >=1 cc, and it isn't
         // active when done is active, because at that point the FSM is in the START
         // state and ready to go into another loop
         write_go = ~write_done;
       end
-		WRITING1: begin
-        // Hecka hacky, but the idea is that we activate go for >=1 cc, and it isn't
-        // active when done is active, because at that point the FSM is in the START
-        // state and ready to go into another loop
-        write_go = ~write_done;
+      SHOW0: begin
+		
       end
-		SHOW0: begin
-		
-		end
-		SHOW1: begin
-		
-		end
       REFRESHING: begin
         // Hecka hacky, but the idea is that we activate go for >=1 cc, and it isn't
         // active when done is active, because at that point the FSM is in the START
@@ -264,47 +234,7 @@ module SDRAMController
       DRAM_ADDR = write_DRAM_ADDR;
       DRAM_BA = write_DRAM_BA;
     end
-	 READING1: begin
-      // Assign to DRAM_XXX the outputs of the respective
-      // submodule
-      
-      DRAM_CKE = read_DRAM_CKE;
-      DRAM_CAS_N = read_DRAM_CAS_N;
-      DRAM_CS_N = read_DRAM_CS_N;
-      DRAM_LDQM = read_DRAM_LDQM;
-      DRAM_UDQM = read_DRAM_UDQM;
-      DRAM_RAS_N = read_DRAM_RAS_N;
-      DRAM_WE_N = read_DRAM_WE_N;
-      DRAM_ADDR = read_DRAM_ADDR;
-      DRAM_BA = read_DRAM_BA;
-    end
-    WRITING1: begin
-      // Assign to DRAM_XXX the outputs of the respective
-      // submodule
-      
-      DRAM_CKE = write_DRAM_CKE;
-      DRAM_CAS_N = write_DRAM_CAS_N;
-      DRAM_CS_N = write_DRAM_CS_N;
-      DRAM_LDQM = write_DRAM_LDQM;
-      DRAM_UDQM = write_DRAM_UDQM;
-      DRAM_RAS_N = write_DRAM_RAS_N;
-      DRAM_WE_N = write_DRAM_WE_N;
-      DRAM_ADDR = write_DRAM_ADDR;
-      DRAM_BA = write_DRAM_BA;
-    end
-	 SHOW0: begin
-      // TODO: Issue a NOP command
-      DRAM_CAS_N <= 1;
-      DRAM_CS_N  <= 0;
-      DRAM_RAS_N <= 1;
-      DRAM_WE_N  <= 1;
-      DRAM_CKE = 1;
-      DRAM_LDQM = 0;
-      DRAM_UDQM = 0;
-      DRAM_ADDR = 13'd0;
-      DRAM_BA = 2'd0;
-    end
-	 SHOW1: begin
+    SHOW0: begin
       // TODO: Issue a NOP command
       DRAM_CAS_N <= 1;
       DRAM_CS_N  <= 0;
@@ -341,22 +271,16 @@ module SDRAMController
       write_data <= 16'd0;
       cycle_counter <= 0;
 		
-		reg_cpu0_SDRAM_as <= 0;
-		reg_cpu0_SDRAM_rw <= 0;
-		reg_cpu1_SDRAM_as <= 0;
-		reg_cpu1_SDRAM_rw <= 0;
-		reg_cpu0_SDRAM_addr <= 23'd0;
-		reg_cpu1_SDRAM_addr <= 23'd0;
+      reg_cpu0_SDRAM_as <= 0;
+      reg_cpu0_SDRAM_rw <= 0;
+      reg_cpu0_SDRAM_addr <= 23'd0;
       reg_cpu0_SDRAM_data_write <= 16'd0;
-		reg_cpu1_SDRAM_data_write <= 16'd0;
 		
-		cpu0_SDRAM_done <= 0;
-	   cpu1_SDRAM_done <= 0;
+      cpu0_SDRAM_done <= 0;
 		ready <= 0;
     end
     else begin
-	   cpu0_SDRAM_done <= 0;
-	   cpu1_SDRAM_done <= 0;
+      cpu0_SDRAM_done <= 0;
 		
     case(state)
       UNINIT: begin
@@ -366,16 +290,12 @@ module SDRAMController
         
       end
       READY: begin
-		  ready <= 1;
-		  // Store SDRAM command data in registers
-		  reg_cpu0_SDRAM_as <= cpu0_SDRAM_as;
-		  reg_cpu0_SDRAM_rw <= cpu0_SDRAM_rw;
-		  reg_cpu1_SDRAM_as <= cpu1_SDRAM_as;
-		  reg_cpu1_SDRAM_rw <= cpu1_SDRAM_rw;
-		  reg_cpu0_SDRAM_addr <= cpu0_SDRAM_addr;
-		  reg_cpu1_SDRAM_addr <= cpu1_SDRAM_addr;
+        ready <= 1;
+        // Store SDRAM command data in registers
+        reg_cpu0_SDRAM_as <= cpu0_SDRAM_as;
+        reg_cpu0_SDRAM_rw <= cpu0_SDRAM_rw;
+        reg_cpu0_SDRAM_addr <= cpu0_SDRAM_addr;
         reg_cpu0_SDRAM_data_write <= cpu0_SDRAM_data_write;
-		  reg_cpu1_SDRAM_data_write <= cpu1_SDRAM_data_write;
 		  
 		  
         if(nextState == WRITING0) begin
@@ -383,74 +303,40 @@ module SDRAMController
           write_data <= cpu0_SDRAM_data_write;
 			 ready <= 0;
         end
-		  if(nextState == WRITING1) begin
-          write_addr <= cpu1_SDRAM_addr;
-          write_data <= cpu1_SDRAM_data_write;
-			 ready <= 0;
+        if(nextState == READING0) begin
+          read_addr <= cpu0_SDRAM_addr;
+          ready <= 0;
         end
-       if(nextState == READING0) begin
-         read_addr <= cpu0_SDRAM_addr;
-			ready <= 0;
-       end
-		 if(nextState == READING1) begin
-         read_addr <= cpu1_SDRAM_addr;
-			ready <= 0;
-       end
-       cycle_counter <= cycle_counter + 1;
+        cycle_counter <= cycle_counter + 1;
       end
       READING0: begin
         cycle_counter <= cycle_counter + 1;
 		  
-		  if(read_done) begin
-          cpu0_SDRAM_data_read <= read_data;
-          counter <= 0;
-		  end
+        if(read_done) begin
+           cpu0_SDRAM_data_read <= read_data;
+           counter <= 0;
+        end
       end
       WRITING0: begin
          cycle_counter <= cycle_counter + 1;
 			if(write_done) counter <= 0;
       end
-		READING1: begin
+      SHOW0: begin
         cycle_counter <= cycle_counter + 1;
-		  if(read_done) begin
-          cpu1_SDRAM_data_read <= read_data;
-			 counter <= 0;
-        end
-      end
-      WRITING1: begin
-        cycle_counter <= cycle_counter + 1;
-		  if(write_done) counter <= 0;
-      end
-		SHOW0: begin
-		  cycle_counter <= cycle_counter + 1;
-		  counter <= counter + 1; // We need to show the data for 4 cycles
-		  cpu0_SDRAM_done <= 1;
+        counter <= counter + 1; // We need to show the data for 4 cycles
+        cpu0_SDRAM_done <= 1;
+		
 		  
-		  if(nextState == WRITING1) begin
-          write_addr <= cpu1_SDRAM_addr;
-          write_data <= cpu1_SDRAM_data_write;
-			 ready <= 0;
-        end
-		  if(nextState == READING1) begin
-         read_addr <= reg_cpu1_SDRAM_addr;
-			ready <= 0;
-        end
-		end
-		SHOW1: begin
-		  cycle_counter <= cycle_counter + 1;
-		  counter <= counter + 1; // We need to show the data for 4 cycles
-		  cpu1_SDRAM_done <= 1;
-		  
-		  if(nextState == WRITING0) begin
+        if(nextState == WRITING0) begin
           write_addr <= reg_cpu0_SDRAM_addr;
           write_data <= reg_cpu0_SDRAM_data_write;
-			 ready <= 0;
+          ready <= 0;
         end
-		  if(nextState == READING0) begin
-         read_addr <= reg_cpu0_SDRAM_addr;
-			ready <= 0;
+        if(nextState == READING0) begin
+          read_addr <= reg_cpu0_SDRAM_addr;
+          ready <= 0;
         end
-		end
+      end
       REFRESHING: begin
         cycle_counter <= 0;
       end
