@@ -1,0 +1,121 @@
+{
+    "MlibObjs": {},
+    "PrevCompiledModules": {
+        "std": {
+            "reYIK_d": {
+                "bytes": 28470,
+                "mod": "std",
+                "archive": "archive.1/_prev_archive_1.a",
+                "out": "reYIK_d.o",
+                "mode": 4,
+                "checksum": 4294967295
+            }
+        },
+        "...MASTER...": {
+            "amcQw_d": {
+                "bytes": 7993,
+                "mod": "...MASTER...",
+                "out": "objs/amcQw_d.o",
+                "mode": 4,
+                "checksum": 4294967295
+            }
+        }
+    },
+    "CompileStrategy": "fullobj",
+    "NameTable": {
+        "_vcs_unit__2570486653": [
+            "_vcs_unit__2570486653",
+            "SDn9f",
+            "module"
+        ],
+        "std": [
+            "std",
+            "reYIK",
+            "module"
+        ],
+        "...MASTER...": [
+            "SIM",
+            "amcQw",
+            "module"
+        ],
+        "SDRAMController": [
+            "SDRAMController",
+            "Adtq9",
+            "module"
+        ]
+    },
+    "CompileStatus": "Successful",
+    "stat": {
+        "ru_self_cgstart": {
+            "ru_stime_sec": 0.025160999999999999,
+            "ru_utime_sec": 0.055564000000000002,
+            "ru_majflt": 0,
+            "ru_maxrss_kb": 50140,
+            "ru_minflt": 12157,
+            "ru_nvcsw": 114,
+            "ru_nivcsw": 4
+        },
+        "outputSizePerQuad": 42.0,
+        "totalObjSize": 136262,
+        "ru_childs_cgstart": {
+            "ru_stime_sec": 0.0,
+            "ru_utime_sec": 0.0,
+            "ru_majflt": 0,
+            "ru_maxrss_kb": 0,
+            "ru_minflt": 0,
+            "ru_nvcsw": 0,
+            "ru_nivcsw": 0
+        },
+        "nMops": 5776,
+        "nQuads": 3227,
+        "ru_self_end": {
+            "ru_stime_sec": 0.040173,
+            "ru_utime_sec": 0.082460000000000006,
+            "ru_majflt": 0,
+            "ru_maxrss_kb": 58536,
+            "ru_minflt": 14566,
+            "ru_nvcsw": 190,
+            "ru_nivcsw": 5
+        },
+        "ru_childs_end": {
+            "ru_stime_sec": 0.0,
+            "ru_utime_sec": 0.0,
+            "ru_majflt": 0,
+            "ru_maxrss_kb": 0,
+            "ru_minflt": 0,
+            "ru_nvcsw": 0,
+            "ru_nivcsw": 0
+        },
+        "mopSpeed": 214753.12314098747,
+        "quadSpeed": 119980.66627007732,
+        "CodeGen(%)": 32.617026437060396,
+        "mop/quad": 1.7898977378370002,
+        "Frontend(%)": 67.382973562939597
+    },
+    "SIMBData": {
+        "out": "amcQwB.o",
+        "bytes": 56564
+    },
+    "Misc": {
+        "cwd": "/afs/ece.cmu.edu/usr/tjjohans/Private/18-500/HardwareWorker/memory",
+        "csrc": "csrc",
+        "daidir_abs": "/afs/ece.cmu.edu/usr/tjjohans/Private/18-500/HardwareWorker/memory/simv.daidir",
+        "csrc_abs": "/afs/ece.cmu.edu/usr/tjjohans/Private/18-500/HardwareWorker/memory/csrc",
+        "daidir": "simv.daidir",
+        "default_output_dir": "csrc",
+        "archive_dir": "archive.1"
+    },
+    "LVLData": [
+        "SIM"
+    ],
+    "CurCompileModules": [
+        "...MASTER...",
+        "_vcs_unit__2570486653",
+        "SDRAMController"
+    ],
+    "CurCompileUdps": {},
+    "PEModules": [],
+    "CompileProcesses": [
+        "cgproc.9420.json"
+    ]
+}

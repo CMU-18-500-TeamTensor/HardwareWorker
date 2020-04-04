@@ -1,0 +1,56 @@
+{
+    "CompUnits": {
+        "amcQw_d": {
+            "mod": "...MASTER...",
+            "out": "objs/amcQw_d.o",
+            "bytes": 10289,
+            "mode": 4,
+            "checksum": 4294967295
+        },
+        "SDn9f_d": {
+            "mod": "_vcs_unit__2570486653",
+            "archive": "archive.1/_9420_archive_1.a",
+            "out": "SDn9f_d.o",
+            "bytes": 6438,
+            "mode": 4,
+            "checksum": 4294967295
+        },
+        "Adtq9_d": {
+            "mod": "SDRAMController",
+            "archive": "archive.1/_9420_archive_1.a",
+            "out": "Adtq9_d.o",
+            "bytes": 62971,
+            "mode": 4,
+            "checksum": 4294967295
+        }
+    },
+    "Modules": {
+        "SDRAMController": {
+            "Compiled": "Yes",
+            "Compiled Times": 1
+        },
+        "...MASTER...": {},
+        "_vcs_unit__2570486653": {
+            "Compiled": "Yes",
+            "Compiled Times": 1
+        },
+        "std": {}
+    },
+    "ObjArchives": [
+        {
+            "archive": "archive.1/_9420_archive_1.a",
+            "objects": [
+                [
+                    "SDn9f_d.o",
+                    6438
+                ],
+                [
+                    "Adtq9_d.o",
+                    62971
+                ]
+            ],
+            "size": 69409
+        }
+    ],
+    "reusePaths": {}
+}
