@@ -3,11 +3,11 @@
 `define CACHE_BITS 8
 
 `ifndef MHANDLE
-`include "mem_handle.vh"
+`include "memory/mem_handle.vh"
 `define MHANDLE
 `endif
 
-module cache(input               clk, w_en, r_en, write_through,
+module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_through,
              input  logic [25:2] addr,
              input  logic [31:0] data_store,
              output logic [31:0] data_load,
@@ -30,6 +30,8 @@ module cache(input               clk, w_en, r_en, write_through,
   assign line_requested = addr[25:25-`CACHE_BITS];
 
   assign cache_hit = (state == W_HIT) || (state == R_HIT);
+
+  logic cache_dirty;
 
   // nextState logic
   always_comb begin
@@ -89,8 +91,10 @@ module cache(input               clk, w_en, r_en, write_through,
     if(w_en && line_addr == addr[25:`CACHE_BITS]) begin
       // Write and line hit
       M[addr] <= data_store;
+      cache_dirty <= 1;
     end
     if(state == R_MISS && mem_done) begin
+      // Read and line miss
       M <= line_read;
     end
   end
@@ -118,6 +122,16 @@ module cache(input               clk, w_en, r_en, write_through,
         mem_addr = addr;
       end
     endcase
+  end
+
+  // FSM logic
+  always_ff @(posedge clk, rst_l) begin
+    if(~rst_l) begin
+      state <= WAIT;
+    end
+    else begin
+      state <= nextState;
+    end
   end
 
 endmodule: cache

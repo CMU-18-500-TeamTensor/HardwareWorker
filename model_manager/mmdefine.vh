@@ -1,10 +1,8 @@
 `ifndef MM_DEFINE
 `define MM_DEFINE
 
-package MM_HANDSHAKE;
 
-  parameter OPCODE_WIDTH;
+typedef enum logic [5:0] {LINEAR, CONV, FLATTEN, MAXPOOL, RELU, SOFTMAX} layer_opcode;
 
-endpackage: MM_HANDSHAKE
 
 `endif
