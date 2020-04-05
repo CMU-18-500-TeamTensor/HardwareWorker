@@ -41,11 +41,11 @@ module FPUJobManager
         else
           nextState = WAIT;
       end
-      LINEARFW:
-        if(lfw_done) begin
+      LINEARFW: begin
+        if(lfw_done)
           nextState = DONE;
         else
-          nextState = LINEAR_FW;
+          nextState = LINEARFW;
       end
       DONE: begin
         if(avail)
@@ -79,7 +79,7 @@ module LinearForward
    mem_handle a, b, c, d,
    input logic go,
    output logic done,
-   inout reg[31:0][31:0] r);
+   output reg[31:0][31:0] r);
 
 
   enum logic [4:0] {WAIT, A1, A2, A3, A4, A5, A6, A7, A8, LOAD1, EX1, 
@@ -103,8 +103,10 @@ module LinearForward
         nextState = (d.done) ? A5 : A4;
       A5:
         nextState = A6;
+      A6:
+        nextState = (a.done) ? A7 : A6;
       A7:
-        nextState = (a.done) ? A8 : A7;
+        nextState = (a.done && b.done) ? A8 : A7;
       A8: begin
         if(r[4] == r[1] && r[3] < r[2] - 1)
           nextState = LOAD1;
@@ -118,7 +120,7 @@ module LinearForward
       EX1:
         nextState = WB1;
       WB1:
-        nextState = (d.done) ? A8 : WB1;
+        nextState = A8; //nextState = (d.done) ? A8 : WB1;
       LOAD2:
         nextState = (c.done && d.done) ? EX2 : LOAD2;
       EX2:
@@ -140,6 +142,31 @@ module LinearForward
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+
+      a.w_en <= 0;
+      a.r_en <= 0;
+      a.avail <= 0;
+      a.ptr <= 0;
+      a.data_store <= 0;
+
+      b.w_en <= 0;
+      b.r_en <= 0;
+      b.avail <= 0;
+      b.ptr <= 0;
+      b.data_store <= 0;
+
+      c.w_en <= 0;
+      c.r_en <= 0;
+      c.avail <= 0;
+      c.ptr <= 0;
+      c.data_store <= 0;
+
+      d.w_en <= 0;
+      d.r_en <= 0;
+      d.avail <= 0;
+      d.ptr <= 0;
+      d.data_store <= 0;
+
     end
     else begin
       case(state)      
@@ -149,7 +176,7 @@ module LinearForward
           c.avail <= 1;
       
           if(c.done) begin
-            r[1] <= c.data;
+            r[1] <= c.data_load;
             c.r_en <= 0;
             c.avail <= 0;
             c.ptr <= c.ptr + 1;
@@ -159,7 +186,7 @@ module LinearForward
           d.ptr <= d.region_begin;
           d.w_en <= 1;
           d.avail <= 1;
-          d.data <= r[1];
+          d.data_store <= r[1];
           
           if(d.done) begin
             d.w_en <= 0;
@@ -175,13 +202,13 @@ module LinearForward
             c.r_en <= 0;
             c.avail <= 0;
             c.ptr <= c.ptr + 1;
-            r[1] <= c.data;
+            r[1] <= c.data_load;
           end
         end
         A4: begin
           d.w_en <= 1;
           d.avail <= 1;
-          d.data <= r[1];
+          d.data_store <= r[1];
 
           if(d.done) begin
             d.w_en <= 0;
@@ -213,8 +240,8 @@ module LinearForward
           r[4] <= 0;
           r[5] <= 0;
 
-          if(a.done) r[2] <= a.data;
-          if(b.done) r[7] <= b.data;
+          if(a.done) r[2] <= a.data_load;
+          if(b.done) r[7] <= b.data_load;
 
           if(a.done && b.done) begin
             a.r_en <= 0;
@@ -239,9 +266,9 @@ module LinearForward
           d.r_en <= 1;
           d.avail <= 1;
 
-          if(c.done) r[8] <= c.data;
-          if(b.done) r[7] <= b.data;
-          if(d.done) r[5] <= d.data;
+          if(c.done) r[8] <= c.data_load;
+          if(b.done) r[7] <= b.data_load;
+          if(d.done) r[5] <= d.data_load;
 
           if(c.done && b.done && d.done) begin
             c.r_en <= 0;
@@ -260,16 +287,16 @@ module LinearForward
           r[5] <= r[5] + r[8];
         end
         WB1: begin
-          d.w_en <= 1;
-          d.avail <= 1;
-          d.data <= r[5];
+          //d.w_en <= 1;
+          //d.avail <= 1;
+          //d.data_store <= r[5];
 
-          if(d.done) begin
+          //if(d.done) begin
             d.ptr <= d.region_begin + 2;
             r[4] <= 0;
             r[3] <= r[3] + 1;
             r[5] <= 0;
-          end
+          //end
         end
         LOAD2: begin
           c.r_en <= 1;
@@ -278,8 +305,8 @@ module LinearForward
           d.r_en <= 1;
           d.avail <= 1;
 
-          if(c.done) r[8] <= c.data;
-          if(d.done) r[5] <= d.data;
+          if(c.done) r[8] <= c.data_load;
+          if(d.done) r[5] <= d.data_load;
 
           if(c.done && d.done) begin
             c.r_en <= 0;
@@ -296,7 +323,7 @@ module LinearForward
         WB2: begin
           d.w_en <= 1;
           d.avail <= 1;
-          d.data <= r[5];
+          d.data_store <= r[5];
 
           if(d.done) begin
             d.w_en <= 0;
@@ -309,8 +336,8 @@ module LinearForward
           d.r_en <= 1;
           d.avail <= 1;
 
-          if(a.done) r[8] <= a.data;
-          if(d.done) r[5] <= d.data;
+          if(a.done) r[8] <= a.data_load;
+          if(d.done) r[5] <= d.data_load;
 
           if(a.done && d.done) begin
             a.r_en <= 0;
@@ -322,12 +349,12 @@ module LinearForward
           end
         end
         EX3: begin
-          r[5] <= r[5] + (r[8] * r[r[7]]);
+          r[5] <= r[5] + (r[8] * r[7]);
         end
         WB3: begin
           d.w_en <= 1;
           d.avail <= 1;
-          d.data <= r[5];
+          d.data_store <= r[5];
           
           if(d.done) begin
             d.w_en <= 0;

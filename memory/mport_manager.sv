@@ -47,8 +47,8 @@ module mport_manager
   logic [25:2] mem_addr;
 
   cache c(.w_en(mh.w_en), .r_en(mh.r_en), .write_through(mh.write_through), 
-          .read_through(mh.read_through), .addr(mh.ptr), .data_store(mh.data),
-          .data_load(mh.data), .done(mh.done), .cache_hit(cache_hit),
+          .read_through(mh.read_through), .addr(mh.ptr), .data_store(mh.data_store),
+          .data_load(mh.data_load), .done(mh.done), .cache_hit(cache_hit),
           .line_read, .line_store, .line_read, .mem_ready, .mem_done, 
           .mem_w_en, .mem_r_en, .mem_addr);
 

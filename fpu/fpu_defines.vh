@@ -4,7 +4,7 @@
 
 `include "memory/mem_handle.vh"
 
-typedef enum logic [5:0] {LINEAR_FW, CONV_FW} op_id;
+typedef enum logic [5:0] {NOOP, LINEAR_FW, CONV_FW} op_id;
 
 interface FPUJMInterface;
 

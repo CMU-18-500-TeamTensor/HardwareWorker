@@ -11,7 +11,7 @@ interface mem_handle;
   logic                  w_en, r_en;
   logic                  avail, done;
   logic                  write_through, read_through;
-  logic [`DATA_SIZE-1:0] data;
+  logic [`DATA_SIZE-1:0] data_store, data_load;
 endinterface
 
 typedef struct packed {
