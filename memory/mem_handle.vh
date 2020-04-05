@@ -1,6 +1,9 @@
 `define ADDR_SIZE 23
 `define DATA_SIZE 32
 
+`ifndef MEM_HANDLE
+`define MEM_HANDLE
+
 interface mem_handle;
   logic [`ADDR_SIZE-1:0] region_begin,
                          region_end,
@@ -20,3 +23,5 @@ typedef struct packed {
   logic                  write_through, read_through;
   logic [`DATA_SIZE-1:0] data;
 } mem_handle_t;
+
+`endif

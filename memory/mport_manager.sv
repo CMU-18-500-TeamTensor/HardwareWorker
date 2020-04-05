@@ -1,9 +1,6 @@
 `default_nettype none
 
-`ifndef MHANDLE
 `include "memory/mem_handle.vh"
-`define MHANDLE
-`endif
 
 module mport_manager
   (input  logic clk, rst_l,

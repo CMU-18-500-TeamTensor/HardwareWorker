@@ -2,10 +2,7 @@
 
 `define CACHE_BITS 8
 
-`ifndef MHANDLE
 `include "memory/mem_handle.vh"
-`define MHANDLE
-`endif
 
 module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_through,
              input  logic [25:2] addr,
