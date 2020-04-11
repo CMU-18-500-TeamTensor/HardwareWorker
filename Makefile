@@ -1,7 +1,7 @@
 
 MMUSRC = memory/cache.sv memory/mport_manager.sv memory/mmu.sv
 MMSRC = model_manager/model_manager.sv
-FPUSRC = fpu/fpubank.sv fpu/fpu_jm.sv
+FPUSRC = fpu/fpubank.sv fpu/fpu_jm.sv fpu/linear_fw.sv fpu/flatten_bw.sv
 
 SIM = vcs
 VCSFLAGS = -sverilog +warn_all
