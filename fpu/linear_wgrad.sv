@@ -191,6 +191,7 @@ module LinearWeightGradient
           end
         end
       endcase
+      state <= nextState;
     end
   end
 

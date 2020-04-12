@@ -96,6 +96,7 @@ module LinearBiasGradient
           end
         end
       endcase
+      state <= nextState;
     end
   end
 
