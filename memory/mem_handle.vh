@@ -1,8 +1,9 @@
-`define ADDR_SIZE 23
-`define DATA_SIZE 32
-
 `ifndef MEM_HANDLE
 `define MEM_HANDLE
+
+`define CACHE_BITS 8
+`define ADDR_SIZE 23
+`define DATA_SIZE 32
 
 interface mem_handle;
   logic [`ADDR_SIZE-1:0] region_begin,

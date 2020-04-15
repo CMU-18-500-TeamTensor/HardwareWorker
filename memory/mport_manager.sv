@@ -16,14 +16,14 @@ module mport_manager
    input  logic        SDRAM_done,
 
    // m9k interface
-   output logic        m9k_w_en, m9k_write_through,
-   output logic [25:2] m9k_addr,
+   output logic        m9k_w_en, m9k_r_en,
+   output logic [14:0] m9k_addr,
    output logic [31:0] m9k_data_store,
    input  logic [31:0] m9k_data_load,
    input  logic        m9k_done);
 
   // Counter variable used when reading a block 
-  logic [`CACHE_BITS:2] line_ctr;
+  logic [`CACHE_BITS:0] line_ctr, num_elems;
 
 /*module cache(input               clk, w_en, write_through,
              input  logic [25:2] addr,
@@ -40,21 +40,20 @@ module mport_manager
   logic cache_hit;
 
   // Actual memory input/output
-  logic [`CACHE_BITS-1:2][31:0] line_read;
-  logic [`CACHE_BITS-1:2][31:0] line_store;
+  logic [`CACHE_BITS-1:0][31:0] line_read;
+  logic [`CACHE_BITS-1:0][31:0] line_store;
   logic        mem_ready, mem_done;
-  logic        mem_w_en, mem_r_en;
-  logic [25:2] mem_addr;
+  logic        mem_w_line, mem_r_line, mem_w_one, mem_r_one;
+  logic [`ADDR_SIZE-1:0] mem_addr;
 
-  cache c(.w_en(mh.w_en), .r_en(mh.r_en), .write_through(mh.write_through), 
+  cache c(.clk, .rst_l, .w_en(mh.w_en), .r_en(mh.r_en), .write_through(mh.write_through), 
           .read_through(mh.read_through), .addr(mh.ptr), .data_store(mh.data_store),
           .data_load(mh.data_load), .done(mh.done), .cache_hit(cache_hit),
-          .line_read, .line_store, .line_read, .mem_ready, .mem_done, 
-          .mem_w_en, .mem_r_en, .mem_addr);
+          .line_read, .line_store, .mem_ready, .mem_done, 
+          .mem_w_line, .mem_r_line, .mem_w_one, .mem_r_one, .mem_addr);
 
-  enum logic[3:0] {WAIT, SERVICE_CACHE, SERVICE_M9K_CM, SERVICE_M9K, 
-                   SERVICE_SDRAM_CM, SERVICE_SDRAM0, SERVICE_SDRAM1,
-                   SHOW} state, nextState;
+  enum logic[3:0] {WAIT, M9K_LOOP, M9K_SERVICE, SDRAM_LOOP, SDRAM_SERVICE0,
+                   SDRAM_SERVICE0I, SDRAM_SERVICE1, SHOW} state, nextState;
 
   // Internal logic
   always_comb begin
@@ -64,15 +63,29 @@ module mport_manager
     SDRAM_addr = 23'b0;
     SDRAM_data_write = 16'b0;
 
-    unique case(state)
-      SERVICE_CACHE: begin
-        
-      end
-      SERVICE_SDRAM0: begin
-      
-      end
-      SERVICE_SDRAM1: begin
+    m9k_w_en = 0;
+    m9k_r_en = 0;
+    m9k_addr = 0;
+    m9k_data_store = 32'd0;
 
+    unique case(state)
+      M9K_SERVICE: begin
+        m9k_w_en = mem_w_line || mem_w_one;
+        m9k_r_en = mem_r_line || mem_r_one;
+        m9k_addr = mem_addr;
+        m9k_data_store = line_store[line_ctr];
+      end
+      SDRAM_SERVICE0: begin
+        SDRAM_as = 1;
+        SDRAM_rw = mem_w_line || mem_w_one;
+        SDRAM_addr = {mem_addr[21:0], 1'b0};
+        SDRAM_data_write = line_store[line_ctr][15:0];
+      end
+      SDRAM_SERVICE1: begin
+        SDRAM_as = 1;
+        SDRAM_rw = mem_w_line || mem_w_one;
+        SDRAM_addr = {mem_addr[21:0], 1'b1};
+        SDRAM_data_write = line_store[line_ctr][31:16];
       end
     endcase
   end
@@ -82,67 +95,47 @@ module mport_manager
   
     unique case(state)
       WAIT: begin
-        nextState = WAIT;
-        //if(mh.w_en) nextState = SERVICE_CACHE;
-        //else if(mh.r_en && ~mh.read_through) nextState = SERVICE_CACHE;
-        //else if(mh.r_en && mh.read_through)  begin
-        // Let's just get something working now and focus on the cache later.
-        if(mh.w_en || mh.r_en) begin
-          if(mh.ptr[`ADDR_SIZE-1]) begin
-            nextState = SERVICE_M9K;
-          end
-          else begin
-            nextState = SERVICE_SDRAM0;
-          end
+        if(mem_w_line || mem_r_line || mem_w_one || mem_r_one) begin
+          if(mem_addr[`ADDR_SIZE-1])
+            nextState = M9K_LOOP;
+          else
+            nextState = SDRAM_LOOP;
         end
+        else
+          nextState = WAIT;
       end
-      SERVICE_CACHE: begin
-        nextState = SERVICE_CACHE;
-        if(~cache_hit) begin
-          if(mh.ptr[`ADDR_SIZE-1]) begin
-            if(mh.write_through || mh.read_through)
-              nextState = SERVICE_M9K;
-            else
-              nextState = SERVICE_M9K_CM;
-          end
-          else begin
-            if(mh.write_through || mh.read_through)
-              nextState = SERVICE_SDRAM0;
-            else
-              nextState = SERVICE_SDRAM_CM;
-          end
-        end
-        else nextState = SHOW;
-      end
-      SERVICE_M9K: begin
-        if(m9k_done) nextState = SHOW;
-        else nextState = SERVICE_M9K;
-      end
-      SERVICE_M9K_CM: begin
-        if(m9k_done && line_ctr[`CACHE_BITS])
+      M9K_LOOP: begin
+        if(line_ctr == num_elems)
           nextState = SHOW;
         else
-          nextState = SERVICE_M9K_CM;
+          nextState = M9K_SERVICE;
       end
-      SERVICE_SDRAM0: begin
-        if(SDRAM_done) nextState = SERVICE_SDRAM1;
-        else nextState = SERVICE_SDRAM0;
+      M9K_SERVICE: begin
+        if(m9k_done)
+          nextState = M9K_LOOP;
+        else
+          nextState = M9K_SERVICE;
       end
-      SERVICE_SDRAM1: begin
-        if(SDRAM_done) nextState = SHOW;
-        else nextState = SERVICE_SDRAM1;
-      end
-      SERVICE_SDRAM_CM: begin
-        if(SDRAM_done && line_ctr[`CACHE_BITS])
+      SDRAM_LOOP: begin
+        if(line_ctr == num_elems)
           nextState = SHOW;
         else
-          nextState = SERVICE_SDRAM_CM;
+          nextState = SDRAM_SERVICE0;
       end
-      SHOW: begin
-        // Show phase ends when the client signals the end of their
-        // information need by deasserting the enable signals.
-        if(~mh.w_en && ~mh.r_en) nextState = WAIT;
-        else nextState = SHOW;
+      SDRAM_SERVICE0: begin
+        if(SDRAM_done) 
+          nextState = SDRAM_SERVICE0I;
+        else
+          nextState = SDRAM_SERVICE0;
+      end
+      SDRAM_SERVICE0I: begin
+        nextState = SDRAM_SERVICE1;
+      end
+      SDRAM_SERVICE1: begin
+        if(SDRAM_done)
+          nextState = SDRAM_LOOP;
+        else
+          nextState = SDRAM_SERVICE1;
       end
     endcase
   end
@@ -153,7 +146,39 @@ module mport_manager
       state <= WAIT;
     end
     else begin
+      case(state)
+        WAIT: begin
+          line_ctr <= 0;
+          if(mem_r_line)
+            num_elems <= `CACHE_BITS;
+          if(mem_w_line)
+            num_elems <= `CACHE_BITS;
+          if(mem_w_one)
+            num_elems <= 1;
+          if(mem_r_one)
+            num_elems <= 1;
+        end
+        M9K_SERVICE: begin
+          if(nextState == M9K_LOOP) begin
+            if(mem_r_line || mem_r_one)
+              line_read[line_ctr] <= m9k_data_load;
+            line_ctr <= line_ctr + 1;
+          end
+        end
+        SDRAM_SERVICE0: begin
+          if(nextState == SDRAM_SERVICE0I)
+            line_read[line_ctr][15:0] <= SDRAM_data_read;
+        end
+        SDRAM_SERVICE1: begin
+          if(nextState == SDRAM_LOOP) begin
+            line_read[line_ctr][31:16] <= SDRAM_data_read;
+            line_ctr <= line_ctr + 1;
+          end
+        end
+      endcase
+
       state <= nextState;
+
     end
   end
 

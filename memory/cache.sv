@@ -3,7 +3,7 @@
 `include "memory/mem_handle.vh"
 
 module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_through,
-             input  logic [25:0] addr,
+             input  logic [`ADDR_SIZE-1:0] addr,
              input  logic [31:0] data_store,
              output logic [31:0] data_load,
              output logic        done, cache_hit,
@@ -11,14 +11,14 @@ module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_thr
              input  logic [`CACHE_BITS-1:0][31:0] line_read,
              output logic [`CACHE_BITS-1:0][31:0] line_store,
              input  logic        mem_ready, mem_done,
-             output logic        mem_w_line, mem_r_line, mem_w_one, m_r_one,
-             output logic [25:0] mem_addr);
+             output logic        mem_w_line, mem_r_line, mem_w_one, mem_r_one,
+             output logic [`ADDR_SIZE-1:0] mem_addr);
 
   logic [`CACHE_BITS-1:0][31:0] M;
 
-  logic [25:25-`CACHE_BITS] line_addr;
+  logic [`ADDR_SIZE:`ADDR_SIZE-`CACHE_BITS+1] line_addr;
   logic [`CACHE_BITS-1:0] item_addr;
-  assign item_addr <= addr[`CACHE_BITS-1:0];
+  assign item_addr = addr[`CACHE_BITS-1:0];
 
   enum logic [5:0] {WAIT, W_MAKE_CACHE, R_MAKE_CACHE, LINE_FLUSH, 
                      LINE_LOAD, R_THRU_MAKE, R_THRU_SHOW, W_THRU_MAKE, 
@@ -58,13 +58,14 @@ module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_thr
         end
         else if(r_en) begin
           if(read_through) begin
-            if(dirty)
+            if(cache_dirty)
               nextState = LINE_FLUSH;
             else
               nextState = R_THRU_MAKE;
+          end
           else begin
             if(~cache_valid || (line_requested != line_addr)) begin
-              if(dirty)
+              if(cache_dirty)
                 nextState = LINE_FLUSH;
               else
                 nextState = LINE_LOAD;
@@ -79,13 +80,13 @@ module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_thr
       W_MAKE_CACHE: begin
         if(~w_en)
           nextState = WAIT;
-        else:
+        else
           nextState = W_MAKE_CACHE;
       end
       R_MAKE_CACHE: begin
         if(~r_en)
           nextState = WAIT;
-        else:
+        else
           nextState = R_MAKE_CACHE;
       end
       LINE_FLUSH: begin
@@ -106,7 +107,7 @@ module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_thr
         else
           nextState = LINE_FLUSH;
       end
-      LONE_LOAD: begin
+      LINE_LOAD: begin
         if(mem_done) begin
           if(w_en)
             nextState = W_MAKE_CACHE;

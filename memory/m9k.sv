@@ -1,9 +1,9 @@
 module m9k_controller(input               clk, w_en, 
-                      input  logic [14:2] addr,
+                      input  logic [14:0] addr,
                       input  logic [31:0] data_store,
                       output logic [31:0] data_load);
 
-  reg [14:2] M [31:0];
+  reg [14:0] M [31:0];
 
   always_ff @(posedge clk) begin
     if(w_en) begin
