@@ -25,7 +25,7 @@ module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_thr
                      W_THRU_SHOW} state, nextState;
 
   logic [`CACHE_BITS-1:0] line_requested;
-  assign line_requested = addr[25:25-`CACHE_BITS];
+  assign line_requested = addr[`ADDR_SIZE-1:`ADDR_SIZE-`CACHE_BITS];
 
   assign cache_hit = 0;
 

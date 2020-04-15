@@ -31,7 +31,10 @@ module MMU
     input  logic [31:0] data_store,
     ioutput logic [31:0] data_load
   */
-  m9k_controller m9k(.*);
+  m9k_controller m9k(.clk, .rst_l, .w_en(m9k_w_en), .addr(m9k_addr), 
+                     .data_store(m9k_data_store), .data_load(m9k_data_load));
+
+  assign m9k_done = 1;
 
   FakeSDRAM sdram(.*);
 

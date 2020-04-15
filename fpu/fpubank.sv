@@ -28,6 +28,7 @@ endmodule: FPUBank
  * FPUBankTest
  * This test will perform a 
 */
+/*
 module FPUBankTester;
 
   logic clk, rst_l;
@@ -219,4 +220,4 @@ module FPUBankTester;
   end
 
 endmodule: FPUBankTester
-
+*/

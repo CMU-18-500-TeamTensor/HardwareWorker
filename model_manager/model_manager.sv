@@ -373,6 +373,7 @@ module model_manager
 
 endmodule
 
+/*
 module model_manager_test;
 
   logic   clk, rst_l;
@@ -477,4 +478,4 @@ module model_manager_test;
   end
 
 endmodule: model_manager_test
-
+*/
