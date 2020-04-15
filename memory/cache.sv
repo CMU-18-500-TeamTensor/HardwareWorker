@@ -1,133 +1,203 @@
 `default_nettype none
 
-`define CACHE_BITS 8
-
 `include "memory/mem_handle.vh"
 
 module cache(input  logic        clk, rst_l, w_en, r_en, write_through, read_through,
-             input  logic [25:2] addr,
+             input  logic [25:0] addr,
              input  logic [31:0] data_store,
              output logic [31:0] data_load,
              output logic        done, cache_hit,
              // Actual memory input/output
-             input  logic [`CACHE_BITS-1:2][31:0] line_read,
-             output logic [`CACHE_BITS-1:2][31:0] line_store,
+             input  logic [`CACHE_BITS-1:0][31:0] line_read,
+             output logic [`CACHE_BITS-1:0][31:0] line_store,
              input  logic        mem_ready, mem_done,
-             output logic        mem_w_en, mem_r_en,
-             output logic [25:2] mem_addr);
+             output logic        mem_w_line, mem_r_line, mem_w_one, m_r_one,
+             output logic [25:0] mem_addr);
 
-  logic [`CACHE_BITS-1:2][31:0] M;
+  logic [`CACHE_BITS-1:0][31:0] M;
 
-  logic [25:`CACHE_BITS] line_addr;
+  logic [25:25-`CACHE_BITS] line_addr;
+  logic [`CACHE_BITS-1:0] item_addr;
+  assign item_addr <= addr[`CACHE_BITS-1:0];
 
-  enum logic [15:0] {WAIT, W_HIT, R_HIT, W_MISS, R_MISS, 
-                     W_MISS_DONE, R_MISS_DONE} state, nextState;
+  enum logic [5:0] {WAIT, W_MAKE_CACHE, R_MAKE_CACHE, LINE_FLUSH, 
+                     LINE_LOAD, R_THRU_MAKE, R_THRU_SHOW, W_THRU_MAKE, 
+                     W_THRU_SHOW} state, nextState;
 
   logic [`CACHE_BITS-1:0] line_requested;
   assign line_requested = addr[25:25-`CACHE_BITS];
 
-  assign cache_hit = (state == W_HIT) || (state == R_HIT);
+  assign cache_hit = 0;
 
-  logic cache_dirty;
+  logic cache_valid, cache_dirty;
+
+  assign done = ((state == W_MAKE_CACHE) || (state == R_MAKE_CACHE) || 
+                 (state == W_THRU_SHOW) || (state == R_THRU_SHOW));
 
   // nextState logic
   always_comb begin
     unique case(state)
       WAIT: begin
-        if (w_en && (line_addr == line_requested) && 
-            !write_through) begin
-          // Line hit, write to cache
-          nextState = W_HIT;
+        if(w_en) begin
+          if(write_through) begin
+            if(cache_dirty)
+              nextState = LINE_FLUSH;
+            else
+              nextState = W_THRU_MAKE;
+          end
+          else begin
+            if(~cache_valid || (line_requested != line_addr)) begin
+              if(cache_dirty)
+                nextState = LINE_FLUSH;
+              else
+                nextState = LINE_LOAD;
+            end
+            else
+              nextState = W_MAKE_CACHE;
+          end
         end
-        else if(w_en && ((line_addr != line_requested) || write_through)) begin
-          // Line miss / write through on a write
-          nextState = W_MISS;
+        else if(r_en) begin
+          if(read_through) begin
+            if(dirty)
+              nextState = LINE_FLUSH;
+            else
+              nextState = R_THRU_MAKE;
+          else begin
+            if(~cache_valid || (line_requested != line_addr)) begin
+              if(dirty)
+                nextState = LINE_FLUSH;
+              else
+                nextState = LINE_LOAD;
+            end
+            else
+              nextState = R_MAKE_CACHE;
+          end
         end
-        else if(r_en && (line_addr == line_requested)) begin
-          // Line hit on a read
-          nextState = R_HIT;
-        end
-        else if(r_en && (line_addr != line_requested)) begin
-          // Line miss on a read
-          nextState = R_MISS;
-        end
-        else begin
-          // No operation requested
+        else
           nextState = WAIT;
-        end
       end
-      W_HIT: begin
-        // Writes are single-cycle, so nextState is always WAIT.
-        nextState = WAIT;
+      W_MAKE_CACHE: begin
+        if(~w_en)
+          nextState = WAIT;
+        else:
+          nextState = W_MAKE_CACHE;
       end
-      W_MISS: begin
+      R_MAKE_CACHE: begin
+        if(~r_en)
+          nextState = WAIT;
+        else:
+          nextState = R_MAKE_CACHE;
+      end
+      LINE_FLUSH: begin
         if(mem_done) begin
-          nextState = WAIT;
+          if(w_en) begin
+            if(write_through)
+              nextState = W_THRU_MAKE;
+            else
+              nextState = LINE_LOAD;
+          end
+          else if(r_en) begin
+            if(read_through)
+              nextState = R_THRU_MAKE;
+            else
+              nextState = LINE_LOAD;
+          end
         end
-        else begin
-          nextState = W_MISS;
-        end
+        else
+          nextState = LINE_FLUSH;
       end
-      R_HIT: begin
-        // Reads from cache are always single-cycle
-        nextState = WAIT;
-      end
-      R_MISS: begin
+      LONE_LOAD: begin
         if(mem_done) begin
+          if(w_en)
+            nextState = W_MAKE_CACHE;
+          else if(r_en)
+            nextState = R_MAKE_CACHE;
+        end
+        else
+          nextState = LINE_LOAD;
+      end
+      R_THRU_MAKE: begin
+        if(mem_done)
+          nextState = R_THRU_SHOW;
+        else
+          nextState = R_THRU_MAKE;
+      end
+      W_THRU_MAKE: begin
+        if(mem_done)
+          nextState = W_THRU_SHOW;
+        else
+          nextState = W_THRU_MAKE;
+      end
+      R_THRU_SHOW: begin
+        if(~r_en)
           nextState = WAIT;
-        end
-        else begin
-          nextState = W_MISS;
-        end
+        else
+          nextState = R_THRU_SHOW;
+      end
+      W_THRU_SHOW: begin
+        if(~w_en)
+          nextState = WAIT;
+        else
+          nextState = W_THRU_SHOW;
       end
     endcase
   end
 
   // Cache memory logic
-  always_ff @(posedge clk) begin
-    if(w_en && line_addr == addr[25:`CACHE_BITS]) begin
-      // Write and line hit
-      M[addr] <= data_store;
-      cache_dirty <= 1;
-    end
-    if(state == R_MISS && mem_done) begin
-      // Read and line miss
-      M <= line_read;
-    end
-  end
-
-  // External memory control logic
-  always_comb begin
-    data_load = 32'b0;
-    done = 1'b0;
-    line_store = M;
-    mem_w_en = 1'b0;
-    mem_r_en = 1'b0;
-    mem_addr = addr;
-
-    case(state)
-      W_MISS: begin
-        line_store = M;
-        done = mem_done;
-        mem_w_en = w_en;
-        mem_addr = addr;
-      end
-      R_MISS: begin
-        data_load = line_read[addr[25-`CACHE_BITS-1:2]];
-        done = mem_done;
-        mem_r_en = r_en;
-        mem_addr = addr;
-      end
-    endcase
-  end
-
-  // FSM logic
-  always_ff @(posedge clk, rst_l) begin
+  always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+      cache_valid <= 0;
+      M <= 0;
+      cache_dirty <= 0;
     end
     else begin
-      state <= nextState;
+      case(state)
+        LINE_FLUSH: begin
+          line_store <= M;
+          mem_w_line <= 1;
+          mem_addr <= addr;
+
+          if(mem_done) begin
+            mem_w_line <= 0;
+          end
+        end
+        LINE_LOAD: begin
+          mem_r_line <= 0;
+          mem_addr <= addr;          
+          cache_valid <= 1;
+
+          if(mem_done) begin
+            M <= line_read;
+            mem_r_line <= 0;
+          end
+        end
+        W_MAKE_CACHE: begin
+          M[item_addr] <= data_store;
+          cache_dirty <= 1;
+        end
+        R_MAKE_CACHE: begin
+          data_load <= M[item_addr];
+        end
+        W_THRU_MAKE: begin
+          mem_w_one <= 1;
+          line_store[0] <= M[item_addr];
+          mem_addr <= addr;
+
+          if(mem_done) begin
+            mem_w_one <= 0;
+          end
+        end
+        R_THRU_MAKE: begin
+          mem_r_one <= 1;
+          mem_addr <= addr;
+
+          if(mem_done) begin
+            data_load <= line_read[0];
+            mem_r_one <= 0;
+          end
+        end
+      endcase
     end
   end
 
