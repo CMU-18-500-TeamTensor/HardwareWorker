@@ -21,14 +21,14 @@ module model_manager
 
   enum logic [5:0] {UNASSIGNED, ASN_MODEL, ASN_LAYER, ASN_SCRATCH, ASN_SGRAD, 
                     ASN_WEIGHT, ASN_WGRAD, ASN_BIAS, ASN_BGRAD,
-                    ASSIGNED, INPUT, FORWARD1, FORWARD2, BACKWARD1,
+                    ASSIGNED, INPUT, OUTPUT, FORWARD1, FORWARD2, BACKWARD1,
                     BACKWARD2, BACKWARDW1, BACKWARDW2, BACKWARDB1, BACKWARDB2,
                     UPDATE_LOOP, UPDATEW1, UPDATEW2, UPDATEB1, UPDATEB2,
                     INPUT_DONE} state, nextState;
 
   logic [15:0]      model_id;
 
-  mem_handle_t        model_ptr, sample_ptr;
+  mem_handle_t        model_ptr, sample_ptr, label_ptr;
   logic [15:0][7:0]   layer_opcodes;
   mem_handle_t [15:0] layer_scratch, layer_sgrad, layer_weights, layer_wgrad,
                       layer_bias, layer_bgrad;
@@ -53,7 +53,7 @@ module model_manager
         if(asn_opcode == FLATTEN)
           nextState = ASN_MODEL;
         else
-          nextState = (mm_o == ASN_SGRAD) ? ASN_WEIGHT: ASN_SCRATCH;
+          nextState = (mm_o == ASN_SGRAD) ? ASN_SGRAD: ASN_SCRATCH;
       end
       ASN_SGRAD: begin
         nextState = (mm_o == ASN_WEIGHT) ? ASN_WEIGHT : ASN_SGRAD;
@@ -71,9 +71,12 @@ module model_manager
         nextState = (mm_o == ASN_MODEL) ? ASN_MODEL : ASN_BGRAD;
       end
       ASSIGNED: begin
-        nextState = (ASN_INPUT) ? INPUT : ASSIGNED;
+        nextState = (mm_o == ASN_INPUT) ? INPUT : ASSIGNED;
       end
       INPUT: begin
+        nextState = (mm_o == ASN_OUTPUT) ? OUTPUT : INPUT;
+      end
+      OUTPUT: begin
         nextState = FORWARD1;
       end
       FORWARD1: begin
@@ -135,6 +138,19 @@ module model_manager
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= UNASSIGNED;
+
+      a.region_begin <= 0;
+      a.region_end <= 0;
+      
+      b.region_begin <= 0;
+      b.region_end <= 0;
+
+      c.region_begin <= 0;
+      c.region_end <= 0;
+
+      d.region_begin <= 0;
+      d.region_end <= 0;
+
     end
     else begin
 
@@ -152,7 +168,10 @@ module model_manager
         end
         ASN_SCRATCH: begin
           layer_scratch[layer_ctr] <= dpr_pass;
-       
+        end
+        ASN_SGRAD: begin
+          layer_sgrad[layer_ctr] <= dpr_pass;
+
           if(nextState == ASN_MODEL)
             layer_ctr <= layer_ctr + 1;
         end
@@ -175,6 +194,10 @@ module model_manager
           layer_ctr <= 0;
           sample_ptr.region_begin <= dpr_pass.region_begin;
           sample_ptr.region_end <= dpr_pass.region_end;
+        end
+        OUTPUT: begin
+          label_ptr.region_begin <= dpr_pass.region_begin;
+          label_ptr.region_end <= dpr_pass.region_end;
         end
         FORWARD1: begin
           fpu_avail <= 1;

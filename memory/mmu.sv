@@ -112,7 +112,7 @@ module MMU
 
   genvar i;
   generate
-  for(i = 0; i < `NUM_MPORTS; i = i + 1) begin
+  for(i = 0; i < `NUM_MPORTS; i = i + 1) begin : mport_inst
     mport_manager mp(.clk, .rst_l, .mh(mh[i]), .SDRAM_pll_locked(mport_SDRAM_pll_locked[i]),
                       .SDRAM_ready(mport_SDRAM_ready[i]), .SDRAM_as(mport_SDRAM_as[i]),
                       .SDRAM_rw(mport_SDRAM_rw[i]), .SDRAM_addr(mport_SDRAM_addr[i]),
@@ -136,20 +136,44 @@ module FakeSDRAM
    output logic [15:0] SDRAM_data_read,
    output logic SDRAM_done);
 
-  logic [1023:0][15:0] M;
+  logic [4095:0][15:0] M;
 
   logic [7:0] ctr;
 
+  int i;
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       M <= 0;
       ctr <= 0;
       SDRAM_done <= 0;
       SDRAM_data_read <= 0;
+
+      M[10] <= 2;
+      M[11] <= 0;
+      M[12] <= 5;
+      M[13] <= 0;
+      M[14] <= 5;
+      M[15] <= 0;
+      
+      for(i = 0; i < 25; i = i + 1) begin
+        M[16 + 2*i] <= i + 1;
+        M[17 + 2*i] <= 0;
+      end
+
+      M[68] <= 1;
+      M[69] <= 0;
+      M[70] <= 5;
+      M[71] <= 0;
+
+      for(i = 0; i < 5; i = i + 1) begin
+        M[72 + 2*i] <= i + 1;
+        M[73 + 2*i] <= 0;
+      end
+      
     end
     else begin
       if(SDRAM_as) begin
-        if(ctr == 10) begin
+        if(ctr == 3) begin
           if(SDRAM_rw) begin
             M[SDRAM_addr] <= SDRAM_data_write;
             ctr <= 0;

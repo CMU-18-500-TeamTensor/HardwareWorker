@@ -40,8 +40,8 @@ module mport_manager
   logic cache_hit;
 
   // Actual memory input/output
-  logic [`CACHE_BITS-1:0][31:0] line_read;
-  logic [`CACHE_BITS-1:0][31:0] line_store;
+  logic [`CACHE_SIZE-1:0][31:0] line_read;
+  logic [`CACHE_SIZE-1:0][31:0] line_store;
   logic        mem_ready, mem_done;
   logic        mem_w_line, mem_r_line, mem_w_one, mem_r_one;
   logic [`ADDR_SIZE-1:0] mem_addr;
@@ -68,7 +68,7 @@ module mport_manager
     m9k_addr = 0;
     m9k_data_store = 32'd0;
 
-    unique case(state)
+    case(state)
       M9K_SERVICE: begin
         m9k_w_en = mem_w_line || mem_w_one;
         m9k_r_en = mem_r_line || mem_r_one;
@@ -78,13 +78,13 @@ module mport_manager
       SDRAM_SERVICE0: begin
         SDRAM_as = 1;
         SDRAM_rw = mem_w_line || mem_w_one;
-        SDRAM_addr = {mem_addr[21:0], 1'b0};
+        SDRAM_addr = {mem_addr[21:`CACHE_BITS], line_ctr[`CACHE_BITS-1:0], 1'b0};
         SDRAM_data_write = line_store[line_ctr][15:0];
       end
       SDRAM_SERVICE1: begin
         SDRAM_as = 1;
         SDRAM_rw = mem_w_line || mem_w_one;
-        SDRAM_addr = {mem_addr[21:0], 1'b1};
+        SDRAM_addr = {mem_addr[21:`CACHE_BITS], line_ctr[`CACHE_BITS-1:0], 1'b1};
         SDRAM_data_write = line_store[line_ctr][31:16];
       end
     endcase
@@ -137,6 +137,12 @@ module mport_manager
         else
           nextState = SDRAM_SERVICE1;
       end
+      SHOW: begin
+        if(mem_w_line || mem_r_line || mem_w_one || mem_r_one)
+          nextState = SHOW;
+        else
+          nextState = WAIT;
+      end
     endcase
   end
 
@@ -144,15 +150,18 @@ module mport_manager
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+      mem_done <= 0;
+
+      line_read <= 0;
     end
     else begin
       case(state)
         WAIT: begin
           line_ctr <= 0;
           if(mem_r_line)
-            num_elems <= `CACHE_BITS;
+            num_elems <= `CACHE_SIZE;
           if(mem_w_line)
-            num_elems <= `CACHE_BITS;
+            num_elems <= `CACHE_SIZE;
           if(mem_w_one)
             num_elems <= 1;
           if(mem_r_one)
@@ -174,6 +183,12 @@ module mport_manager
             line_read[line_ctr][31:16] <= SDRAM_data_read;
             line_ctr <= line_ctr + 1;
           end
+        end
+        SHOW: begin
+          if(nextState == SHOW)
+            mem_done <= 1;
+          else
+            mem_done <= 0;
         end
       endcase
 

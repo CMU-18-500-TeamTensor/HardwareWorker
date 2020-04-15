@@ -1,7 +1,8 @@
 `ifndef MEM_HANDLE
 `define MEM_HANDLE
 
-`define CACHE_BITS 8
+`define CACHE_BITS 3
+`define CACHE_SIZE 8
 `define ADDR_SIZE 23
 `define DATA_SIZE 32
 

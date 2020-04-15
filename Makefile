@@ -21,8 +21,8 @@ fpujobmanager:
 	${SIM} ${VCSFLAGS} ${FPUSRC} -o $@
 
 top:
-	${SIM} ${VCSFLAGS} ${MMUSRC} ${MMSRC} ${FPUSRC} ${TOPSRC}
+	${SIM} ${VCSFLAGS} ${MMUSRC} ${MMSRC} ${FPUSRC} ${TOPSRC} -o $@
 
 clean:
 	rm -r csrc *.daidir
-	rm simv mmu modelmanager fpujobmanager
+	rm simv mmu modelmanager fpujobmanager top

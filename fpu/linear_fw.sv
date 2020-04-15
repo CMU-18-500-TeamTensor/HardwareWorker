@@ -73,35 +73,46 @@ module LinearForward
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+      r <= 0;
 
       a.w_en <= 0;
       a.r_en <= 0;
       a.avail <= 0;
       a.ptr <= 0;
       a.data_store <= 0;
+      a.read_through <= 0;
+      a.write_through <= 0;
 
       b.w_en <= 0;
       b.r_en <= 0;
       b.avail <= 0;
       b.ptr <= 0;
       b.data_store <= 0;
+      b.read_through <= 0;
+      b.write_through <= 0;
 
       c.w_en <= 0;
       c.r_en <= 0;
       c.avail <= 0;
       c.ptr <= 0;
       c.data_store <= 0;
+      c.read_through <= 0;
+      c.write_through <= 0;
 
       d.w_en <= 0;
       d.r_en <= 0;
       d.avail <= 0;
       d.ptr <= 0;
       d.data_store <= 0;
+      d.read_through <= 0;
+      d.write_through <= 0;
 
     end
     else begin
       case(state)      
         A1: begin
+          a.ptr <= a.region_begin;
+          b.ptr <= b.region_begin;
           c.ptr <= c.region_begin;
           c.r_en <= 1;
           c.avail <= 1;
@@ -254,9 +265,11 @@ module LinearForward
         WB2: begin
           d.w_en <= 1;
           d.avail <= 1;
+          d.write_through <= 1;
           d.data_store <= r[5];
 
           if(d.done) begin
+            d.write_through <= 0;
             d.w_en <= 0;
             d.avail <= 0;
           end

@@ -136,6 +136,7 @@ module FPUJobManager
     case(state)
       LINEARFW: begin
         r = lfw_r;
+        done = lfw_done;
 
         lfw_a.region_begin = a.region_begin;
         lfw_a.region_end = a.region_end;
@@ -146,6 +147,9 @@ module FPUJobManager
         a.avail = lfw_a.avail;
         a.data_store = lfw_a.data_store;
         a.ptr = lfw_a.ptr;
+        a.read_through <= lfw_a.read_through;
+        a.write_through <= lfw_a.write_through;
+
 
         lfw_b.region_begin = b.region_begin;
         lfw_b.region_end = b.region_end;
@@ -156,6 +160,8 @@ module FPUJobManager
         b.avail = lfw_b.avail;
         b.data_store = lfw_b.data_store;
         b.ptr = lfw_b.ptr;
+        b.read_through <= lfw_b.read_through;
+        b.write_through <= lfw_b.write_through;
 
         lfw_c.region_begin = c.region_begin;
         lfw_c.region_end = c.region_end;
@@ -166,6 +172,8 @@ module FPUJobManager
         c.avail = lfw_c.avail;
         c.data_store = lfw_c.data_store;
         c.ptr = lfw_c.ptr;
+        c.read_through <= lfw_c.read_through;
+        c.write_through <= lfw_c.write_through;
 
         lfw_d.region_begin = d.region_begin;
         lfw_d.region_end = d.region_end;
@@ -176,9 +184,12 @@ module FPUJobManager
         d.avail = lfw_d.avail;
         d.data_store = lfw_d.data_store;
         d.ptr = lfw_d.ptr;
+        d.read_through <= lfw_d.read_through;
+        d.write_through <= lfw_d.write_through;
       end
       LINEARBW: begin
         r = lbw_r;
+        done = lbw_done;
 
         lbw_a.region_begin = a.region_begin;
         lbw_a.region_end = a.region_end;
@@ -189,6 +200,8 @@ module FPUJobManager
         a.avail = lbw_a.avail;
         a.data_store = lbw_a.data_store;
         a.ptr = lbw_a.ptr;
+        a.read_through <= lbw_a.read_through;
+        a.write_through <= lbw_a.write_through;
 
         lbw_b.region_begin = b.region_begin;
         lbw_b.region_end = b.region_end;
@@ -199,6 +212,8 @@ module FPUJobManager
         b.avail = lbw_b.avail;
         b.data_store = lbw_b.data_store;
         b.ptr = lbw_b.ptr;
+        b.read_through <= lbw_b.read_through;
+        b.write_through <= lbw_b.write_through;
 
         lbw_c.region_begin = c.region_begin;
         lbw_c.region_end = c.region_end;
@@ -209,6 +224,8 @@ module FPUJobManager
         c.avail = lbw_c.avail;
         c.data_store = lbw_c.data_store;
         c.ptr = lbw_c.ptr;
+        c.read_through <= lbw_c.read_through;
+        c.write_through <= lbw_c.write_through;
 
         lbw_d.region_begin = d.region_begin;
         lbw_d.region_end = d.region_end;
@@ -219,9 +236,12 @@ module FPUJobManager
         d.avail = lbw_d.avail;
         d.data_store = lbw_d.data_store;
         d.ptr = lbw_d.ptr;
+        d.read_through <= lbw_d.read_through;
+        d.write_through <= lbw_d.write_through;
       end
       LINEARWGRAD: begin
         r = lwg_r;
+        done = lwg_done;
 
         lwg_a.region_begin = a.region_begin;
         lwg_a.region_end = a.region_end;
@@ -232,6 +252,8 @@ module FPUJobManager
         a.avail = lwg_a.avail;
         a.data_store = lwg_a.data_store;
         a.ptr = lwg_a.ptr;
+        a.read_through <= lwg_a.read_through;
+        a.write_through <= lwg_a.write_through;
 
         lwg_b.region_begin = b.region_begin;
         lwg_b.region_end = b.region_end;
@@ -242,6 +264,8 @@ module FPUJobManager
         b.avail = lwg_b.avail;
         b.data_store = lwg_b.data_store;
         b.ptr = lwg_b.ptr;
+        b.read_through <= lwg_b.read_through;
+        b.write_through <= lwg_b.write_through;
 
         lwg_c.region_begin = c.region_begin;
         lwg_c.region_end = c.region_end;
@@ -252,6 +276,8 @@ module FPUJobManager
         c.avail = lwg_c.avail;
         c.data_store = lwg_c.data_store;
         c.ptr = lwg_c.ptr;
+        c.read_through <= lwg_c.read_through;
+        c.write_through <= lwg_c.write_through;
 
         lwg_d.region_begin = d.region_begin;
         lwg_d.region_end = d.region_end;
@@ -262,9 +288,12 @@ module FPUJobManager
         d.avail = lwg_d.avail;
         d.data_store = lwg_d.data_store;
         d.ptr = lwg_d.ptr;
+        d.read_through <= lwg_d.read_through;
+        d.write_through <= lwg_d.write_through;
       end
       LINEARBGRAD: begin
         r = lbg_r;
+        done = lbg_done;
 
         lbg_a.region_begin = a.region_begin;
         lbg_a.region_end = a.region_end;
@@ -275,6 +304,8 @@ module FPUJobManager
         a.avail = lbg_a.avail;
         a.data_store = lbg_a.data_store;
         a.ptr = lbg_a.ptr;
+        a.read_through <= lbg_a.read_through;
+        a.write_through <= lbg_a.write_through;
 
         lbg_b.region_begin = b.region_begin;
         lbg_b.region_end = b.region_end;
@@ -285,6 +316,8 @@ module FPUJobManager
         b.avail = lbg_b.avail;
         b.data_store = lbg_b.data_store;
         b.ptr = lbg_b.ptr;
+        b.read_through <= lbg_b.read_through;
+        b.write_through <= lbg_b.write_through;
 
         lbg_c.region_begin = c.region_begin;
         lbg_c.region_end = c.region_end;
@@ -295,6 +328,8 @@ module FPUJobManager
         c.avail = lbg_c.avail;
         c.data_store = lbg_c.data_store;
         c.ptr = lbg_c.ptr;
+        c.read_through <= lbg_c.read_through;
+        c.write_through <= lbg_c.write_through;
 
         lbg_d.region_begin = d.region_begin;
         lbg_d.region_end = d.region_end;
@@ -305,9 +340,12 @@ module FPUJobManager
         d.avail = lbg_d.avail;
         d.data_store = lbg_d.data_store;
         d.ptr = lbg_d.ptr;
+        d.read_through <= lbg_d.read_through;
+        d.write_through <= lbg_d.write_through;
       end
       CONVFW: begin
-        r = lfw_r;
+        r = cfw_r;
+        done = cfw_done;
 
         cfw_a.region_begin = a.region_begin;
         cfw_a.region_end = a.region_end;
@@ -566,6 +604,7 @@ module FPUJobManager
       end
       RELUFW: begin
         r = rfw_r;
+        done = rfw_done;
 
         rfw_a.region_begin = a.region_begin;
         rfw_a.region_end = a.region_end;
@@ -576,6 +615,8 @@ module FPUJobManager
         a.avail = rfw_a.avail;
         a.data_store = rfw_a.data_store;
         a.ptr = rfw_a.ptr;
+        a.read_through <= rfw_a.read_through;
+        a.write_through <= rfw_a.write_through;
 
         rfw_b.region_begin = b.region_begin;
         rfw_b.region_end = b.region_end;
@@ -586,6 +627,8 @@ module FPUJobManager
         b.avail = rfw_b.avail;
         b.data_store = rfw_b.data_store;
         b.ptr = rfw_b.ptr;
+        b.read_through <= rfw_b.read_through;
+        b.write_through <= rfw_b.write_through;
 
         rfw_c.region_begin = c.region_begin;
         rfw_c.region_end = c.region_end;
@@ -596,6 +639,8 @@ module FPUJobManager
         c.avail = rfw_c.avail;
         c.data_store = rfw_c.data_store;
         c.ptr = rfw_c.ptr;
+        c.read_through <= rfw_c.read_through;
+        c.write_through <= rfw_c.write_through;
 
         rfw_d.region_begin = d.region_begin;
         rfw_d.region_end = d.region_end;
@@ -606,9 +651,12 @@ module FPUJobManager
         d.avail = rfw_d.avail;
         d.data_store = rfw_d.data_store;
         d.ptr = rfw_d.ptr;
+        d.read_through <= rfw_d.read_through;
+        d.write_through <= rfw_d.write_through;
       end
       RELUBW: begin
         r = rbw_r;
+        done = rbw_r;
 
         rbw_a.region_begin = a.region_begin;
         rbw_a.region_end = a.region_end;
@@ -619,6 +667,8 @@ module FPUJobManager
         a.avail = rbw_a.avail;
         a.data_store = rbw_a.data_store;
         a.ptr = rbw_a.ptr;
+        a.read_through <= rbw_a.read_through;
+        a.write_through <= rbw_a.write_through;
 
         rbw_b.region_begin = b.region_begin;
         rbw_b.region_end = b.region_end;
@@ -629,6 +679,8 @@ module FPUJobManager
         b.avail = rbw_b.avail;
         b.data_store = rbw_b.data_store;
         b.ptr = rbw_b.ptr;
+        b.read_through <= rbw_b.read_through;
+        b.write_through <= rbw_b.write_through;
 
         rbw_c.region_begin = c.region_begin;
         rbw_c.region_end = c.region_end;
@@ -639,6 +691,8 @@ module FPUJobManager
         c.avail = rbw_c.avail;
         c.data_store = rbw_c.data_store;
         c.ptr = rbw_c.ptr;
+        c.read_through <= rbw_c.read_through;
+        c.write_through <= rbw_c.write_through;
 
         rbw_d.region_begin = d.region_begin;
         rbw_d.region_end = d.region_end;
@@ -649,6 +703,8 @@ module FPUJobManager
         d.avail = rbw_d.avail;
         d.data_store = rbw_d.data_store;
         d.ptr = rbw_d.ptr;
+        d.read_through <= rbw_d.read_through;
+        d.write_through <= rbw_d.write_through;
       end
       FLATTENFW: begin
         r = ff_r;
@@ -738,6 +794,7 @@ module FPUJobManager
       end
       default: begin
         r = 1024'd0;
+        done = 0;
 
         a.w_en  = 0;
         a.r_en  = 0;
