@@ -167,12 +167,14 @@ module LinearWeightGradient
           d.w_en <= 1;
           d.avail <= 1;
           d.data_store <= r[13] * r[14];
+          d.write_through <= d.ptr == d.region_end-1;
 
           if(d.done) begin
             d.w_en <= 0;
             d.avail <= 0;
             d.ptr <= d.ptr + 1;
             r[12] <= r[12] + 1;
+            d.write_through <= 0;
           end
         end
         CHECK1: begin

@@ -42,9 +42,9 @@ module top();
   initial begin
     forever @(posedge clk)
       $display("%s, %h, %s, %h, %s, %d, %d", mm.state,
-               mmu.sdram.M[99:84], fpu.fjm.state, 
-               mmu.sdram.M[205:190], fpu.fjm.rbw.state,
-               mm.layer_ctr, fpu.fjm.rbw_done);
+               mmu.sdram.M[115:100], fpu.fjm.state, 
+               mmu.mport_inst[0].mp.c.M, fpu.fjm.mseb.state,
+               mmu.mport_inst[0].mp.mh.region_begin, mmu.mport_inst[0].mp.mh.ptr);
   end
 
   int i;
@@ -118,6 +118,25 @@ module top();
     dpr_pass.region_begin <= 103;
     dpr_pass.region_end <= 111;
     mm_o <= ASN_MODEL;
+    asn_opcode <= MSE;
+
+    @(posedge clk);
+    mm_o <= ASN_LAYER;
+
+    @(posedge clk);
+    mm_o <= ASN_SCRATCH;
+
+    @(posedge clk);
+    // Scratch pointer
+    dpr_pass.region_begin <= 111;
+    dpr_pass.region_end <= 119;
+    mm_o <= ASN_SGRAD;
+
+    @(posedge clk);
+    // Scratch gradient pointer
+    dpr_pass.region_begin <= 119;
+    dpr_pass.region_end <= 127;
+    mm_o <= ASN_MODEL;
 
 
     @(posedge clk);
@@ -164,6 +183,10 @@ module top();
     
     for(i = 0; i < 100; i = i + 1)
       @(posedge clk);
+    @(posedge mm.state);
+    @(posedge mm.state);
+    @(posedge mm.state);
+    @(posedge mm.state);
     @(posedge mm.state);
     $finish;
 

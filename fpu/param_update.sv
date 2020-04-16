@@ -35,6 +35,8 @@ module ParamUpdate
         else
           nextState = WRITE;
       end
+      DONE:
+        nextState = (~go) ? WAIT : DONE;
     endcase
   end
 

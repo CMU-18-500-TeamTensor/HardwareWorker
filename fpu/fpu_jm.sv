@@ -1025,6 +1025,12 @@ module FPUJobManager
           nextState = RELUFW;
         else if(avail && op == RELU_BW)
           nextState = RELUBW;
+        else if(avail && op == PARAM_UPDATE)
+          nextState = PUPDATE;
+        else if(avail && op == MSE_FW)
+          nextState = MSEFW;
+        else if(avail && op == MSE_BW)
+          nextState = MSEBW;
         else
           nextState = WAIT;
       end
@@ -1066,6 +1072,24 @@ module FPUJobManager
       end
       FLATTENBW: begin
         nextState = (fbw_done) ? DONE : FLATTENBW;
+      end
+      PUPDATE: begin
+        if(pu_done)
+          nextState = DONE;
+        else
+          nextState = PUPDATE;
+      end
+      MSEFW: begin
+        if(msef_done)
+          nextState = DONE;
+        else
+          nextState = MSEFW;
+      end
+      MSEBW: begin
+        if(mseb_done)
+          nextState = DONE;
+        else
+          nextState = MSEBW;
       end
       DONE: begin
         if(avail)

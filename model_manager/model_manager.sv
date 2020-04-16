@@ -53,7 +53,7 @@ module model_manager
         nextState = (mm_o == ASN_SGRAD) ? ASN_SGRAD : ASN_SCRATCH;
       end
       ASN_SGRAD: begin
-        if(asn_opcode == FLATTEN || asn_opcode == RELU)
+        if(asn_opcode == FLATTEN || asn_opcode == RELU || asn_opcode == MSE)
           nextState = ASN_MODEL;
         else
           nextState = (mm_o == ASN_WEIGHT) ? ASN_WEIGHT : ASN_SGRAD;
@@ -86,7 +86,7 @@ module model_manager
         nextState = (layer_ctr == num_layers-1) ? BACKWARD1 : FORWARD1;
       end
       BACKWARD1: begin
-        nextState = (fpu_done) ? BACKWARD2 : BACKWARD1;
+        nextState = ((layer_ctr == 0) || fpu_done) ? BACKWARD2 : BACKWARD1;
       end
       BACKWARD2: begin
         if(layer_opcodes[layer_ctr] == LINEAR)
@@ -241,6 +241,19 @@ module model_manager
               d.region_begin <= layer_scratch[layer_ctr].region_begin;
               d.region_end <= layer_scratch[layer_ctr].region_end;
             end
+            MSE: begin
+              fpu_op <= MSE_FW;
+              
+              // MSE Forward(a = z, b = y, c = , d = L):
+              a.region_begin <= layer_scratch[layer_ctr-1].region_begin;
+              a.region_end <= layer_scratch[layer_ctr-1].region_end;
+
+              b.region_begin <= label_ptr.region_begin;
+              b.region_end <= label_ptr.region_end;
+
+              d.region_begin <= layer_scratch[layer_ctr].region_begin;
+              d.region_end <= layer_scratch[layer_ctr].region_end;
+            end
           endcase
         end
         FORWARD2: begin
@@ -280,6 +293,19 @@ module model_manager
 
               c.region_begin <= layer_scratch[layer_ctr-1].region_begin;
               c.region_end <= layer_scratch[layer_ctr-1].region_end;
+
+              d.region_begin <= layer_sgrad[layer_ctr-1].region_begin;
+              d.region_end <= layer_sgrad[layer_ctr-1].region_end;
+            end
+            MSE: begin
+              fpu_op <= MSE_BW;
+            
+              // a = z, b = y, c = , d = dLdz
+              a.region_begin <= layer_scratch[layer_ctr-1].region_begin;
+              a.region_end <= layer_scratch[layer_ctr-1].region_end;
+
+              b.region_begin <= label_ptr.region_begin;
+              b.region_end <= label_ptr.region_end;
 
               d.region_begin <= layer_sgrad[layer_ctr-1].region_begin;
               d.region_end <= layer_sgrad[layer_ctr-1].region_end;

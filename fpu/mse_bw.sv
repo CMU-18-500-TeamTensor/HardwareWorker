@@ -34,9 +34,15 @@ module MSEBackward
       EX1:
         nextState = EX3;
       EX3:
-        nextState = LOOP;
-      WRITE:
-        nextState = (d.done) ? DONE : WRITE;
+        nextState = WRITE;
+      WRITE: begin
+        if(d.ptr == d.region_end-1)
+          nextState = (d.done) ? DONE : WRITE;
+        else
+          nextState = (d.done) ? LOOP : WRITE;
+      end
+      DONE:
+        nextState = (~go) ? WAIT : DONE;
     endcase
   end
 
@@ -136,12 +142,14 @@ module MSEBackward
           d.w_en <= 1;
           d.avail <= 1;
           d.data_store <= r[1];
-          d.write_through <= 1;
+          d.write_through <= d.ptr == d.region_end-1;
 
           if(d.done) begin
             d.w_en <= 0;
             d.avail <= 0;
             d.write_through <= 0;
+            d.ptr <= d.ptr + 1;
+            r[1] <= 0;
           end
         end
       endcase

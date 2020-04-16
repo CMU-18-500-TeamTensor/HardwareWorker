@@ -39,6 +39,8 @@ module MSEForward
         nextState = LOOP;
       WRITE:
         nextState = (d.done) ? DONE : WRITE;
+      DONE:
+        nextState = (~go) ? WAIT : DONE;
     endcase
   end
 

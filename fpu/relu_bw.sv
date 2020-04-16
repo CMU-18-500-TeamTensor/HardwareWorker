@@ -229,11 +229,13 @@ module ReLUBackward
           d.w_en <= 1;
           d.avail <= 1;
           d.data_store <= r[5];
+          d.write_through <= d.ptr == d.region_end-1;
 
           if(d.done) begin
             d.w_en <= 0;
             d.avail <= 0;
             d.ptr <= d.ptr + 1;
+            d.write_through <= 0;
           end
         end
       endcase
