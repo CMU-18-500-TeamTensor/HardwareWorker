@@ -24,7 +24,7 @@ module ReLUBackward
       START:
         nextState = (a.done) ? START2 : START;
       START2: begin
-        if(a.done && d.done) begin
+        if(a.done && d.done && ~d.avail) begin
           if(r[1] == 1)
             nextState = START3;
           else
@@ -34,11 +34,11 @@ module ReLUBackward
           nextState = START2;
       end
       START3:
-        nextState = (d.done) ? LOOP : START3;
+        nextState = (d.done && ~d.avail) ? LOOP : START3;
       START4:
-        nextState = (a.done && d.done) ? START5 : START4;
+        nextState = (a.done && d.done && ~d.avail) ? START5 : START4;
       START5:
-        nextState = (a.done && d.done) ? START6 : START5;
+        nextState = (a.done && d.done && ~d.avail) ? START6 : START5;
       START6:
         nextState = (d.done) ? LOOP : START6;
       LOOP:
@@ -116,7 +116,7 @@ module ReLUBackward
 
           if(a.done) r[2] <= a.data_load;
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;
@@ -133,7 +133,7 @@ module ReLUBackward
           d.avail <= 1;
           d.data_store <= r[2];
 
-          if(d.done) begin
+          if(d.done && d.avail) begin
             d.w_en <= 0;
             d.avail <= 0;
           end
@@ -148,7 +148,7 @@ module ReLUBackward
 
           if(a.done) r[3] <= a.data_load;
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;
@@ -170,7 +170,7 @@ module ReLUBackward
 
           if(a.done) r[2] <= a.data_load;
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;

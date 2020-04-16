@@ -44,6 +44,7 @@ module ParamUpdate
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+      r <= 0;
 
       a.w_en <= 0;
       a.r_en <= 0;

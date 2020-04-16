@@ -41,10 +41,10 @@ module top();
 
   initial begin
     forever @(posedge clk)
-      $display("%s, %h, %s, %h, %s, %d, %d", mm.state,
-               mmu.sdram.M[115:100], fpu.fjm.state, 
-               mmu.mport_inst[0].mp.c.M, fpu.fjm.mseb.state,
-               mmu.mport_inst[0].mp.mh.region_begin, mmu.mport_inst[0].mp.mh.ptr);
+      $display("%s, %h %h %h %h, %s, %h, %s, %d, %d", mm.state,
+               fpu.fjm.r[22], fpu.fjm.r[21], fpu.fjm.r[11], fpu.fjm.r[10], fpu.fjm.lwg.state, 
+               mmu.sdram.M[115:100], fpu.fjm.lwg.state,
+               mmu.mport_inst[3].mp.mh.region_begin, mmu.mport_inst[3].mp.mh.ptr);
   end
 
   int i;
@@ -183,6 +183,10 @@ module top();
     
     for(i = 0; i < 100; i = i + 1)
       @(posedge clk);
+    @(posedge mm.state);
+    @(posedge mm.state);
+    @(posedge mm.state);
+    @(posedge mm.state);
     @(posedge mm.state);
     @(posedge mm.state);
     @(posedge mm.state);

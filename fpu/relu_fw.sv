@@ -24,7 +24,7 @@ module ReLUForward
       START:
         nextState = (a.done) ? START2 : START;
       START2: begin
-        if(a.done && d.done) begin
+        if(a.done && d.done && ~d.avail) begin
           if(r[1] == 1)
             nextState = START3;
           else
@@ -34,13 +34,13 @@ module ReLUForward
           nextState = START2;
       end
       START3: begin
-        nextState = (d.done) ? LOOP : START3;
+        nextState = (d.done && ~d.avail) ? LOOP : START3;
       end
       START4: begin
-        nextState = (a.done && d.done) ? START5 : START4;
+        nextState = (a.done && d.done && ~d.avail) ? START5 : START4;
       end
       START5: begin
-        nextState = (a.done && d.done) ? START6 : START5;
+        nextState = (a.done && d.done && ~d.avail) ? START6 : START5;
       end
       START6: begin
         nextState = (d.done) ? LOOP : START6;
@@ -123,7 +123,7 @@ module ReLUForward
           d.avail <= 1;
           d.data_store <= r[1];
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;
@@ -138,7 +138,7 @@ module ReLUForward
           d.avail <= 1;
           d.data_store <= r[2];
 
-          if(d.done) begin
+          if(d.done && d.avail) begin
             d.w_en <= 0;
             d.avail <= 0;
             d.ptr <= d.ptr + 1;
@@ -154,7 +154,7 @@ module ReLUForward
           d.avail <= 1;
           d.data_store <= r[2];
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;
@@ -174,7 +174,7 @@ module ReLUForward
           d.avail <= 1;
           d.data_store <= r[3];
 
-          if(a.done && d.done) begin
+          if(a.done && d.done && d.avail) begin
             a.r_en <= 0;
             a.avail <= 0;
             a.ptr <= a.ptr + 1;
@@ -189,7 +189,7 @@ module ReLUForward
           d.avail <= 1;
           d.data_store <= r[2];
 
-          if(d.done) begin
+          if(d.done && d.avail) begin
             d.w_en <= 0;
             d.avail <= 0;
             d.ptr <= d.ptr + 1;

@@ -39,6 +39,8 @@ module LinearWeightGradient
         nextState = (r[11] == r[22]) ? LOADX : A5;
       LOADX:
         nextState = (c.done) ? A5 : LOADX;
+      DONE:
+        nextState = (go) ? DONE : WAIT;
     endcase
   end
 
@@ -47,6 +49,7 @@ module LinearWeightGradient
   always_ff @(posedge clk, negedge rst_l) begin
     if(~rst_l) begin
       state <= WAIT;
+      r <= 0;
 
       a.w_en <= 0;
       a.r_en <= 0;
@@ -149,7 +152,7 @@ module LinearWeightGradient
           end
         end
         A5: begin
-          
+            
         end
         LOAD1: begin
           a.r_en <= 1;
@@ -190,6 +193,7 @@ module LinearWeightGradient
             c.avail <= 0;
             c.ptr <= c.ptr + 1;
             r[10] <= r[10] + 1;
+            r[11] <= 0;
           end
         end
       endcase

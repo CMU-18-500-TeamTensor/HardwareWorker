@@ -10,7 +10,7 @@ module MSEBackward
    output logic done,
    output reg[31:0][31:0] r);
 
-  enum logic [4:0] {WAIT, START, START2, START3, LOOP, EX1, READ,
+  enum logic [4:0] {WAIT, START, START2, START2I, START3, LOOP, EX1, READ,
                     EX3, WRITE, DONE} state, nextState;
 
   assign done = state == DONE;
@@ -24,7 +24,9 @@ module MSEBackward
       START:
         nextState = START2;
       START2:
-        nextState = (d.done) ? START3 : START2;
+        nextState = (a.done && d.done) ? START2I : START2;
+      START2I:
+        nextState = START3;
       START3:
         nextState = (d.done) ? LOOP : START3;
       LOOP:
@@ -86,7 +88,7 @@ module MSEBackward
     else begin
       case(state)
         START: begin
-          a.ptr <= a.region_begin + 2;  // a now points at data
+          a.ptr <= a.region_begin + 1;
           b.ptr <= b.region_begin + 2;  // b now points at data
           d.ptr <= d.region_begin;
         end
@@ -95,20 +97,30 @@ module MSEBackward
           d.avail <= 1;
           d.data_store <= 1;
 
-          if(d.done) begin
+          a.r_en <= 1;
+          a.avail <= 1;
+          if(a.done) r[25] <= a.data_load;
+
+          if(d.done && a.done) begin
             d.w_en <= 0;
             d.avail <= 0;
+            d.ptr <= d.ptr + 1;
+            
+            a.r_en <= 0;
+            a.avail <= 0;
+            a.ptr <= a.ptr + 1;  // a now points at data
           end
         end
         START3: begin
           d.w_en <= 1;
           d.avail <= 1;
-          d.data_store <= 1;
+          d.data_store <= r[25];
         
           if(d.done) begin
             d.w_en <= 0;
             d.avail <= 0;
             r[1] <= 0;
+            d.ptr <= d.ptr + 1;
           end
         end
         READ: begin
