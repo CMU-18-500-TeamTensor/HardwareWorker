@@ -14,7 +14,7 @@ module FPUJobManager
 
   enum logic [5:0] {WAIT, LINEARFW, LINEARBW, LINEARWGRAD, LINEARBGRAD,
                     FLATTENFW, FLATTENBW, CONVFW, CONVBW, CONVWGRAD, CONVBGRAD,
-                    MAXPFW, MAXPBW, RELUFW, RELUBW, PUPDATE, DONE}
+                    MAXPFW, MAXPBW, RELUFW, RELUBW, PUPDATE, MSEFW, MSEBW, DONE}
                     state, nextState;
 
  
@@ -130,6 +130,26 @@ module FPUJobManager
   FlattenBackward fb(.clk, .rst_l, .a(fb_a), .b(fb_b), .c(fb_c), .d(fb_d),
                      .go(state == FLATTENBW), .done(fbw_done), .r(fb_r));
 
+  // Parameter Update
+  mem_handle pu_a(), pu_b(), pu_c(), pu_d();
+  logic[31:0][31:0] pu_r;
+  logic pu_done;
+  ParamUpdate pu(.clk, .rst_l, .a(pu_a), .b(pu_b), .c(pu_c), .d(pu_d),
+                     .go(state == PUPDATE), .done(pu_done), .r(pu_r));
+
+  // MSE Forward
+  mem_handle msef_a(), msef_b(), msef_c(), msef_d();
+  logic[31:0][31:0] msef_r;
+  logic msef_done;
+  MSEForward msef(.clk, .rst_l, .a(msef_a), .b(msef_b), .c(msef_c), .d(msef_d),
+                     .go(state == MSEFW), .done(msef_done), .r(msef_r));
+
+  // MSE Backward
+  mem_handle mseb_a(), mseb_b(), mseb_c(), mseb_d();
+  logic[31:0][31:0] mseb_r;
+  logic mseb_done;
+  MSEBackward mseb(.clk, .rst_l, .a(mseb_a), .b(mseb_b), .c(mseb_c), .d(mseb_d),
+                     .go(state == MSEBW), .done(mseb_done), .r(mseb_r));
 
   // register / memory handle multiplexer
   always_comb begin
@@ -792,6 +812,162 @@ module FPUJobManager
         d.data_store = fb_d.data_store;
         d.ptr = fb_d.ptr;
       end
+      PUPDATE: begin
+        r = pu_r;
+        done = pu_done;
+
+        pu_a.region_begin = a.region_begin;
+        pu_a.region_end = a.region_end;
+        pu_a.data_load  = a.data_load;
+        pu_a.done = a.done;
+        a.w_en  = pu_a.w_en;
+        a.r_en  = pu_a.r_en;
+        a.avail = pu_a.avail;
+        a.data_store = pu_a.data_store;
+        a.ptr = pu_a.ptr;
+        a.read_through <= pu_a.read_through;
+        a.write_through <= pu_a.write_through;
+
+        pu_b.region_begin = b.region_begin;
+        pu_b.region_end = b.region_end;
+        pu_b.data_load  = b.data_load;
+        pu_b.done = b.done;
+        b.w_en  = pu_b.w_en;
+        b.r_en  = pu_b.r_en;
+        b.avail = pu_b.avail;
+        b.data_store = pu_b.data_store;
+        b.ptr = pu_b.ptr;
+        b.read_through <= pu_b.read_through;
+        b.write_through <= pu_b.write_through;
+
+        pu_c.region_begin = c.region_begin;
+        pu_c.region_end = c.region_end;
+        pu_c.data_load  = c.data_load;
+        pu_c.done = c.done;
+        c.w_en  = pu_c.w_en;
+        c.r_en  = pu_c.r_en;
+        c.avail = pu_c.avail;
+        c.data_store = pu_c.data_store;
+        c.ptr = pu_c.ptr;
+        c.read_through <= pu_c.read_through;
+        c.write_through <= pu_c.write_through;
+
+        pu_d.region_begin = d.region_begin;
+        pu_d.region_end = d.region_end;
+        pu_d.data_load  = d.data_load;
+        pu_d.done = d.done;
+        d.w_en  = pu_d.w_en;
+        d.r_en  = pu_d.r_en;
+        d.avail = pu_d.avail;
+        d.data_store = pu_d.data_store;
+        d.ptr = pu_d.ptr;
+        d.read_through <= pu_d.read_through;
+        d.write_through <= pu_d.write_through;
+      end
+      MSEFW: begin
+        r = msef_r;
+        done = msef_done;
+
+        msef_a.region_begin = a.region_begin;
+        msef_a.region_end = a.region_end;
+        msef_a.data_load  = a.data_load;
+        msef_a.done = a.done;
+        a.w_en  = msef_a.w_en;
+        a.r_en  = msef_a.r_en;
+        a.avail = msef_a.avail;
+        a.data_store = msef_a.data_store;
+        a.ptr = msef_a.ptr;
+        a.read_through <= msef_a.read_through;
+        a.write_through <= msef_a.write_through;
+
+        msef_b.region_begin = b.region_begin;
+        msef_b.region_end = b.region_end;
+        msef_b.data_load  = b.data_load;
+        msef_b.done = b.done;
+        b.w_en  = msef_b.w_en;
+        b.r_en  = msef_b.r_en;
+        b.avail = msef_b.avail;
+        b.data_store = msef_b.data_store;
+        b.ptr = msef_b.ptr;
+        b.read_through <= msef_b.read_through;
+        b.write_through <= msef_b.write_through;
+
+        msef_c.region_begin = c.region_begin;
+        msef_c.region_end = c.region_end;
+        msef_c.data_load  = c.data_load;
+        msef_c.done = c.done;
+        c.w_en  = msef_c.w_en;
+        c.r_en  = msef_c.r_en;
+        c.avail = msef_c.avail;
+        c.data_store = msef_c.data_store;
+        c.ptr = msef_c.ptr;
+        c.read_through <= msef_c.read_through;
+        c.write_through <= msef_c.write_through;
+
+        msef_d.region_begin = d.region_begin;
+        msef_d.region_end = d.region_end;
+        msef_d.data_load  = d.data_load;
+        msef_d.done = d.done;
+        d.w_en  = msef_d.w_en;
+        d.r_en  = msef_d.r_en;
+        d.avail = msef_d.avail;
+        d.data_store = msef_d.data_store;
+        d.ptr = msef_d.ptr;
+        d.read_through <= msef_d.read_through;
+        d.write_through <= msef_d.write_through;
+      end
+      MSEBW: begin
+        r = mseb_r;
+        done = mseb_done;
+
+        mseb_a.region_begin = a.region_begin;
+        mseb_a.region_end = a.region_end;
+        mseb_a.data_load  = a.data_load;
+        mseb_a.done = a.done;
+        a.w_en  = mseb_a.w_en;
+        a.r_en  = mseb_a.r_en;
+        a.avail = mseb_a.avail;
+        a.data_store = mseb_a.data_store;
+        a.ptr = mseb_a.ptr;
+        a.read_through <= mseb_a.read_through;
+        a.write_through <= mseb_a.write_through;
+
+        mseb_b.region_begin = b.region_begin;
+        mseb_b.region_end = b.region_end;
+        mseb_b.data_load  = b.data_load;
+        mseb_b.done = b.done;
+        b.w_en  = mseb_b.w_en;
+        b.r_en  = mseb_b.r_en;
+        b.avail = mseb_b.avail;
+        b.data_store = mseb_b.data_store;
+        b.ptr = mseb_b.ptr;
+        b.read_through <= mseb_b.read_through;
+        b.write_through <= mseb_b.write_through;
+
+        mseb_c.region_begin = c.region_begin;
+        mseb_c.region_end = c.region_end;
+        mseb_c.data_load  = c.data_load;
+        mseb_c.done = c.done;
+        c.w_en  = mseb_c.w_en;
+        c.r_en  = mseb_c.r_en;
+        c.avail = mseb_c.avail;
+        c.data_store = mseb_c.data_store;
+        c.ptr = mseb_c.ptr;
+        c.read_through <= mseb_c.read_through;
+        c.write_through <= mseb_c.write_through;
+
+        mseb_d.region_begin = d.region_begin;
+        mseb_d.region_end = d.region_end;
+        mseb_d.data_load  = d.data_load;
+        mseb_d.done = d.done;
+        d.w_en  = mseb_d.w_en;
+        d.r_en  = mseb_d.r_en;
+        d.avail = mseb_d.avail;
+        d.data_store = mseb_d.data_store;
+        d.ptr = mseb_d.ptr;
+        d.read_through <= mseb_d.read_through;
+        d.write_through <= mseb_d.write_through;
+      end
       default: begin
         r = 1024'd0;
         done = 0;
@@ -801,24 +977,32 @@ module FPUJobManager
         a.avail = 0;
         a.data_store = 32'd0;
         a.ptr = 0;
+        a.read_through = 0;
+        a.write_through = 0;
 
         b.w_en  = 0;
         b.r_en  = 0;
         b.avail = 0;
         b.data_store = 32'd0;
         b.ptr = 0;
+        b.read_through = 0;
+        b.write_through = 0;
 
         c.w_en  = 0;
         c.r_en  = 0;
         c.avail = 0;
         c.data_store = 32'd0;
         c.ptr = 0;
+        c.read_through = 0;
+        c.write_through = 0;
 
         d.w_en  = 0;
         d.r_en  = 0;
         d.avail = 0;
         d.data_store = 32'd0;
         d.ptr = 0;
+        d.read_through = 0;
+        d.write_through = 0;
       end
     endcase
   end
