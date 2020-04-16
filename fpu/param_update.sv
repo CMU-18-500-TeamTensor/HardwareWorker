@@ -24,9 +24,9 @@ module ParamUpdate
       START:
         nextState = (a.done) ? LOAD : START;
       LOAD:
-        nextState = (a.done && d.done) ? WRITE : LOAD;
+        nextState = (a.done && d.done && ~d.avail) ? WRITE : LOAD;
       WRITE: begin
-        if(d.done) begin
+        if(d.done && ~d.avail) begin
           if(d.ptr == d.region_end - 1)
             nextState = DONE;
           else
@@ -108,7 +108,7 @@ module ParamUpdate
 
          if(d.done) r[2] <= d.data_load;
 
-         if(a.done && d.done) begin
+         if(a.done && d.done && d.avail) begin
            a.r_en <= 0;
            a.avail <= 0;
            a.ptr <= a.ptr + 1;
@@ -123,7 +123,9 @@ module ParamUpdate
 
          d.data_store = (r[20] * r[1]) + r[2];
 
-         if(d.done) begin
+         if(d.done && d.avail) begin
+           d.w_en <= 0;
+           d.avail <= 0;
            d.ptr <= d.ptr + 1;
          end
        end
