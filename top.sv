@@ -42,9 +42,9 @@ module top();
   initial begin
     forever @(posedge clk)
       $display("%s, %h, %s, %h, %s, %d, %d", mm.state,
-               mmu.mport_inst[0].mp.c.M, fpu.fjm.lf.state, 
-               mmu.sdram.M[99:84], mmu.mport_inst[0].mp.c.state,
-               mmu.mport_SDRAM_addr[0], {mmu.mport_inst[0].mp.c.line_addr, 3'b000});
+               mmu.sdram.M[99:84], fpu.fjm.state, 
+               mmu.sdram.M[205:190], fpu.fjm.rbw.state,
+               mm.layer_ctr, fpu.fjm.rbw_done);
   end
 
   int i;
@@ -108,22 +108,17 @@ module top();
     mm_o <= ASN_SCRATCH;
 
     @(posedge clk);
+    // Scratch pointer
+    dpr_pass.region_begin <= 95;
+    dpr_pass.region_end <= 103;
     mm_o <= ASN_SGRAD;
 
     @(posedge clk);
-    mm_o <= ASN_WEIGHT;
-
-    @(posedge clk);
-    mm_o <= ASN_WGRAD;
-
-    @(posedge clk);
-    mm_o <= ASN_BIAS;
-
-    @(posedge clk);
-    mm_o <= ASN_BGRAD;
-
-    @(posedge clk);
+    // Scratch gradient pointer
+    dpr_pass.region_begin <= 103;
+    dpr_pass.region_end <= 111;
     mm_o <= ASN_MODEL;
+
 
     @(posedge clk);
     mm_o <= WAIT;
@@ -160,6 +155,15 @@ module top();
     for(i = 0; i < 300; i = i + 1)
       @(posedge clk);
     
+    @(posedge mm.state);
+    @(posedge clk);
+
+    for(i = 0; i < 300; i = i + 1)
+      @(posedge clk);
+    @(posedge mm.state);
+    
+    for(i = 0; i < 100; i = i + 1)
+      @(posedge clk);
     @(posedge mm.state);
     $finish;
 

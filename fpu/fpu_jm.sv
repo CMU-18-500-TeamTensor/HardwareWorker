@@ -656,7 +656,7 @@ module FPUJobManager
       end
       RELUBW: begin
         r = rbw_r;
-        done = rbw_r;
+        done = rbw_done;
 
         rbw_a.region_begin = a.region_begin;
         rbw_a.region_end = a.region_end;
@@ -831,6 +831,16 @@ module FPUJobManager
           nextState = LINEARFW;
         else if(avail && op == FLATTEN_BW)
           nextState = FLATTENBW;
+        else if(avail && op == LINEAR_BW)
+          nextState = LINEARBW;
+        else if(avail && op == LINEAR_WGRAD)
+          nextState = LINEARWGRAD;
+        else if(avail && op == LINEAR_BGRAD)
+          nextState = LINEARBGRAD;
+        else if(avail && op == RELU_FW)
+          nextState = RELUFW;
+        else if(avail && op == RELU_BW)
+          nextState = RELUBW;
         else
           nextState = WAIT;
       end
@@ -839,6 +849,36 @@ module FPUJobManager
           nextState = DONE;
         else
           nextState = LINEARFW;
+      end
+      LINEARBW: begin
+        if(lbw_done)
+          nextState = DONE;
+        else
+          nextState = LINEARBW;
+      end
+      LINEARWGRAD: begin
+        if(lwg_done)
+          nextState = DONE;
+        else
+          nextState = LINEARWGRAD;
+      end
+      LINEARBGRAD: begin
+        if(lbg_done)
+          nextState = DONE;
+        else
+          nextState = LINEARBGRAD;
+      end
+      RELUFW: begin
+        if(rfw_done)
+          nextState = DONE;
+        else
+          nextState = RELUFW;
+      end
+      RELUBW: begin
+        if(rbw_done)
+          nextState = DONE;
+        else
+          nextState = RELUBW;
       end
       FLATTENBW: begin
         nextState = (fbw_done) ? DONE : FLATTENBW;

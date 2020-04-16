@@ -48,15 +48,15 @@ module model_manager
         nextState = (mm_o == ASN_SCRATCH) ? ASN_SCRATCH : ASN_LAYER;
       end
       ASN_SCRATCH: begin
-        // FLATTEN is the only layer that doesn't require extra space to store
+        // RELU is the only layer that doesn't require extra space to store
         // gradient info
-        if(asn_opcode == FLATTEN)
-          nextState = ASN_MODEL;
-        else
-          nextState = (mm_o == ASN_SGRAD) ? ASN_SGRAD: ASN_SCRATCH;
+        nextState = (mm_o == ASN_SGRAD) ? ASN_SGRAD : ASN_SCRATCH;
       end
       ASN_SGRAD: begin
-        nextState = (mm_o == ASN_WEIGHT) ? ASN_WEIGHT : ASN_SGRAD;
+        if(asn_opcode == FLATTEN || asn_opcode == RELU)
+          nextState = ASN_MODEL;
+        else
+          nextState = (mm_o == ASN_WEIGHT) ? ASN_WEIGHT : ASN_SGRAD;
       end
       ASN_WEIGHT: begin
         nextState = (mm_o == ASN_WGRAD) ? ASN_WGRAD: ASN_WEIGHT;
@@ -161,7 +161,7 @@ module model_manager
         ASN_MODEL: begin
           model_ptr <= dpr_pass;
           if(nextState == ASSIGNED)
-            num_layers <= layer_ctr+1;
+            num_layers <= layer_ctr;
         end
         ASN_LAYER: begin
           layer_opcodes[layer_ctr] <= asn_opcode;
@@ -245,7 +245,8 @@ module model_manager
         end
         FORWARD2: begin
           fpu_avail <= 0;
-          
+          fpu_op <= NOOP;          
+
           if(nextState == BACKWARD1)
             layer_ctr <= num_layers - 1;
           else

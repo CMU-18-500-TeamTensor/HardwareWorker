@@ -51,6 +51,8 @@ module ReLUBackward
         nextState = (a.done) ? WRITE : READ;
       WRITE:
         nextState = (d.done) ? LOOP : WRITE;
+      DONE:
+        nextState = (go) ? DONE : WAIT;
     endcase
   end
 
@@ -235,6 +237,7 @@ module ReLUBackward
           end
         end
       endcase
+      state <= nextState;
     end
   end
 

@@ -24,10 +24,14 @@ module ReLUForward
       START:
         nextState = (a.done) ? START2 : START;
       START2: begin
-        if(r[1] == 1)
-          nextState = START3;
+        if(a.done && d.done) begin
+          if(r[1] == 1)
+            nextState = START3;
+          else
+            nextState = START4;
+        end
         else
-          nextState = START4;
+          nextState = START2;
       end
       START3: begin
         nextState = (d.done) ? LOOP : START3;
@@ -56,6 +60,9 @@ module ReLUForward
       end
       WRITE: begin
         nextState = (d.done) ? LOOP : WRITE;
+      end
+      DONE: begin
+        nextState = (go) ? DONE : WAIT;
       end
     endcase
   end
@@ -214,6 +221,7 @@ module ReLUForward
           end
         end
       endcase
+      state <= nextState;
     end
   end
 
