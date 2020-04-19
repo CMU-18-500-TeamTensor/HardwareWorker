@@ -1,6 +1,9 @@
 `ifndef MEM_HANDLE
 `define MEM_HANDLE
 
+`define NUM_PORTS 5
+//`define NUM_PORTS 6 // Uncomment for DPR
+
 `define CACHE_BITS 3
 `define CACHE_SIZE 8
 `define ADDR_SIZE 23

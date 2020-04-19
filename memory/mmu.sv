@@ -2,8 +2,6 @@
 
 `include "memory/mem_handle.vh"
 
-`define NUM_MPORTS 5
-
 module MMU
   (input logic clk, rst_l,
    mem_handle mh[`NUM_MPORTS-1:0]);
