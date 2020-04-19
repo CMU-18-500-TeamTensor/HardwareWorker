@@ -136,7 +136,7 @@ module FakeSDRAM
    output logic [15:0] SDRAM_data_read,
    output logic SDRAM_done);
 
-  logic [4095:0][15:0] M;
+  logic [`SDRAM_SIZE-1:0][15:0] M;
 
   logic [7:0] ctr;
 

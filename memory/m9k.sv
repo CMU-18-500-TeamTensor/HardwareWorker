@@ -1,7 +1,7 @@
 `default_nettype none
 
-//`define MEM_SIZE 32768
-`define MEM_SIZE 1024
+
+`include "memory/mem_handle.vh"
 
 
 module m9k_controller(input               clk, rst_l, w_en, 
@@ -9,7 +9,7 @@ module m9k_controller(input               clk, rst_l, w_en,
                       input  logic [31:0] data_store,
                       output logic [31:0] data_load);
 
-  logic [`MEM_SIZE-1:0][31:0] M;
+  logic [`M9K_SIZE-1:0][31:0] M;
 
   assign data_load = M[addr];
 

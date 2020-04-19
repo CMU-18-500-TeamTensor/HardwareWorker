@@ -6,6 +6,9 @@
 `define ADDR_SIZE 23
 `define DATA_SIZE 32
 
+`define M9K_SIZE 1024
+`define SDRAM_SIZE 4096
+
 interface mem_handle;
   logic [`ADDR_SIZE-1:0] region_begin,
                          region_end,
