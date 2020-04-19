@@ -37,8 +37,31 @@ module top();
   FPUBank fpu(.clk, .rst_l, .a(mh[3]), .b(mh[2]), .c(mh[1]), .d(mh[0]),
               .op(fpu_op), .avail(fpu_avail), .done(fpu_done));
 
+
+  // Fake packet memory that pretends to be the SPI interface
+  logic [24:0][31:0] fake_pkt;
+
+  always_ff @(posedge clk, negedge rst_l) begin
+    if(~rst_l) begin
+
+      // Assign model packet
+      fake_pkt <= 800'h00000000000000030000000300000002000000010000000300000001000000090000000800000007000000060000000500000004000000030000000200000001000000030000000300000002000000010000000200000015000000000000000000000005;
+      pkt.region_begin <= 0;
+      pkt.region_end <= 25;
+      pkt.data_load <= 0;
+      pkt.done <= 0;
+    end
+    else begin
+      if(pkt.r_en) begin
+        pkt.data_load <= fake_pkt[pkt.ptr];
+        pkt.done <= 0;
+      end
+      else
+        pkt.done = 0;
+    end
+  end
+
   initial begin
-    $display("%s, %d, %s", mm.state, mm.layer_scratch[0].region_begin, mmu.mport_inst[0].mp.c.state);
     rst_l <= 0;
     rst_l <= #1 1;
     clk <= 0;
@@ -48,159 +71,21 @@ module top();
 
   initial begin
     forever @(posedge clk)
-      $display("%s, %h %h %h %h, %s, %h, %s, %d, %d", mm.state,
-               fpu.fjm.r[20], fpu.fjm.r[2], fpu.fjm.r[1], fpu.fjm.r[10], fpu.fjm.state, 
-               mmu.sdram.M[174:116], fpu.fjm.pu.state,
-               mmu.mport_inst[3].mp.mh.data_load, mmu.mport_inst[3].mp.mh.ptr);
+      $display("%s", mm.state);
   end
 
   int i;
   initial begin
-    dpr_pass.region_begin <= 0;
-    dpr_pass.region_end <= 0;
-    mm_o <= WAIT;
-    asn_opcode <= SOFTMAX;
-
+    pkt_avail <= 0;
     @(posedge clk);
-    mm_o <= ASN_MODEL;
-
     @(posedge clk);
-    mm_o <= ASN_LAYER;
-    asn_opcode <= LINEAR;
 
-    @(posedge clk);
-    mm_o <= ASN_SCRATCH;
+    pkt_avail <= 1;
     
-    @(posedge clk);
-    // Scratch space pointer
-    dpr_pass.region_begin <= 42;
-    dpr_pass.region_end <= 50;
-    mm_o <= ASN_SGRAD;
 
-    @(posedge clk);
-    // Scratch gradient pointer
-    dpr_pass.region_begin <= 50;
-    dpr_pass.region_end <= 58;
-    mm_o <= ASN_WEIGHT;
+    @(posedge dpr_done);
 
-    @(posedge clk);
-    // Weight pointer
-    dpr_pass.region_begin <= 5;
-    dpr_pass.region_end <= 34;
-    mm_o <= ASN_WGRAD;
-
-    @(posedge clk);
-    // Weight gradient pointer
-    dpr_pass.region_begin <= 58;
-    dpr_pass.region_end <= 87;
-    mm_o <= ASN_BIAS;
-
-    @(posedge clk);
-    // Bias pointer
-    dpr_pass.region_begin <= 34;
-    dpr_pass.region_end <= 42;
-    mm_o <= ASN_BGRAD;
-
-    @(posedge clk);
-    // Bias gradient pointer
-    dpr_pass.region_begin <= 87;
-    dpr_pass.region_end <= 95;
-    mm_o <= ASN_MODEL;
-    asn_opcode <= RELU;
-
-    @(posedge clk);
-    mm_o <= ASN_LAYER;
-
-    @(posedge clk);
-    mm_o <= ASN_SCRATCH;
-
-    @(posedge clk);
-    // Scratch pointer
-    dpr_pass.region_begin <= 95;
-    dpr_pass.region_end <= 103;
-    mm_o <= ASN_SGRAD;
-
-    @(posedge clk);
-    // Scratch gradient pointer
-    dpr_pass.region_begin <= 103;
-    dpr_pass.region_end <= 111;
-    mm_o <= ASN_MODEL;
-    asn_opcode <= MSE;
-
-    @(posedge clk);
-    mm_o <= ASN_LAYER;
-
-    @(posedge clk);
-    mm_o <= ASN_SCRATCH;
-
-    @(posedge clk);
-    // Scratch pointer
-    dpr_pass.region_begin <= 111;
-    dpr_pass.region_end <= 119;
-    mm_o <= ASN_SGRAD;
-
-    @(posedge clk);
-    // Scratch gradient pointer
-    dpr_pass.region_begin <= 119;
-    dpr_pass.region_end <= 127;
-    mm_o <= ASN_MODEL;
-
-
-    @(posedge clk);
-    mm_o <= WAIT;
-
-    @(posedge clk);
-
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    mm_o <= ASN_INPUT;
- 
-    @(posedge clk);
-    // Input ptr
-    dpr_pass.region_begin <= 0;
-    dpr_pass.region_begin[`ADDR_SIZE-1] <= 1;
-    dpr_pass.region_end <= 7;
-    dpr_pass.region_end[`ADDR_SIZE-1] <= 1;
-    mm_o <= ASN_OUTPUT;
-
-    @(posedge clk);
-    // Output ptr
-    dpr_pass.region_begin <= 7;
-    dpr_pass.region_begin[`ADDR_SIZE-1] <= 1;
-    dpr_pass.region_end <= 14;
-    dpr_pass.region_end[`ADDR_SIZE-1] <= 1;
-    
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    @(posedge clk);
-    
-    for(i = 0; i < 300; i = i + 1)
-      @(posedge clk);
-    
-    @(posedge mm.state);
-    @(posedge clk);
-
-    for(i = 0; i < 300; i = i + 1)
-      @(posedge clk);
-    @(posedge mm.state);
-    
-    for(i = 0; i < 100; i = i + 1)
-      @(posedge clk);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    @(posedge mm.state);
-    //@(posedge mm.state);
     $finish;
-
   end
 
 endmodule: top
