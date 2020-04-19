@@ -45,11 +45,13 @@ module ZeroRegion
           a.w_en <= 1;
           a.avail <= 1;
           a.data_store <= 0;
+          a.write_through <= a.ptr == a.region_end-1;
 
           if(a.done && a.avail) begin
             a.ptr <= a.ptr + 1;
             a.avail <= 0;
             a.w_en <= 0;
+            a.write_through <= 0;
           end
         end
         DONE: begin
