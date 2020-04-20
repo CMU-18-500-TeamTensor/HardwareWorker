@@ -24,7 +24,8 @@ module DPR
                     ASN_LAYER1, ASN_LAYER1_INTER, ASN_LAYER2, ASN_LAYERSW1, ASN_LAYERSW2, 
                     ASN_LAYERSW1_INTER, ASN_LAYERW1, ASN_LAYERW2, ASN_LAYERB1, ASN_LAYERB2, 
                     ASN_LAYERNW1, ASN_LAYERNW2, ASN_MODEL_DONE, ASSIGN_DP, ASN_LAYERNWINTER,
-                    ASN_LAYERWINTER, ASN_LAYERNW2INTER} state, nextState;
+                    ASN_LAYERWINTER, ASN_LAYERNW2INTER, ASN_MSE1, ASN_MSE2, ASN_MSE3,
+                    ASN_MSE4} state, nextState;
 
   enum logic [1:0] {M_WAIT, M_READ, M_COPY, M_UPDATE} memState, nextMemState;
 
@@ -123,7 +124,7 @@ module DPR
           nextState = COPY_MODEL;
       end
       ASSIGN_MODEL:
-        nextState = (model_handle.ptr == model_handle.region_end) ? ASN_MODEL_DONE : ASN_LAYER1;
+        nextState = (model_handle.ptr == model_handle.region_end) ? ASN_MSE1 : ASN_LAYER1;
       ASN_LAYER1: begin
         nextState = (pkt.done) ? ASN_LAYER1_INTER : ASN_LAYER1;
       end
@@ -157,6 +158,14 @@ module DPR
         nextState = (lyr_opcode == 1) ? ASN_LAYERWINTER : ASN_LAYERNW2INTER;
       ASN_LAYERNW2INTER:
         nextState = ASSIGN_MODEL;
+      ASN_MSE1:
+        nextState = ASN_MSE2;
+      ASN_MSE2:
+        nextState = ASN_MSE3;
+      ASN_MSE3:
+        nextState = ASN_MSE4;
+      ASN_MSE4:
+        nextState = ASN_MODEL_DONE;
       ASN_MODEL_DONE:
         nextState = (~pkt_avail) ? WAIT : ASN_MODEL_DONE;
       default: begin
@@ -403,8 +412,31 @@ module DPR
       ASN_LAYERNW2INTER: begin
 
       end
-      ASN_MODEL_DONE:
+      ASN_MSE1: begin
+        asn_opcode <= MSE;
+        mm_o <= ASN_LAYER;
+      end
+      ASN_MSE2: begin
+        mm_o <= ASN_SCRATCH;
+      end
+      ASN_MSE3: begin
+        // Calculate scratch space
+        dpr_pass.region_begin <= sdram_avail.region_begin;
+        dpr_pass.region_end <= sdram_avail.region_begin + 3 + lyr_outsize;
+        sdram_avail.region_begin <= sdram_avail.region_begin + 3 + lyr_outsize;
+        mm_o <= ASN_SGRAD;
+      end
+      ASN_MSE4: begin
+        // Calculate scratch gradient space
+        dpr_pass.region_begin <= sdram_avail.region_begin;
+        dpr_pass.region_end <= sdram_avail.region_begin + 3 + lyr_outsize;
+        sdram_avail.region_begin <= sdram_avail.region_begin + 3 + lyr_outsize;
+        mm_o <= ASN_MODEL;
+      end
+      ASN_MODEL_DONE: begin
         done <= 1;
+        mm_o <= mm_state'(WAIT);
+      end
       endcase
 
       state <= nextState;
