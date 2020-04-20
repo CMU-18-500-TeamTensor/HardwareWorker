@@ -23,7 +23,8 @@ module DPR
   enum logic [5:0] {WAIT, PARSE, RD_MFULL, MM_COPY, COPY_MODEL, ASSIGN_MODEL, 
                     ASN_LAYER1, ASN_LAYER1_INTER, ASN_LAYER2, ASN_LAYERSW1, ASN_LAYERSW2, 
                     ASN_LAYERSW1_INTER, ASN_LAYERW1, ASN_LAYERW2, ASN_LAYERB1, ASN_LAYERB2, 
-                    ASN_LAYERNW1, ASN_LAYERNW2, ASN_MODEL_DONE, ASSIGN_DP} state, nextState;
+                    ASN_LAYERNW1, ASN_LAYERNW2, ASN_MODEL_DONE, ASSIGN_DP, ASN_LAYERNWINTER,
+                    ASN_LAYERWINTER, ASN_LAYERNW2INTER} state, nextState;
 
   enum logic [1:0] {M_WAIT, M_READ, M_COPY, M_UPDATE} memState, nextMemState;
 
@@ -122,14 +123,14 @@ module DPR
           nextState = COPY_MODEL;
       end
       ASSIGN_MODEL:
-        nextState = ASN_LAYER1;
+        nextState = (model_handle.ptr == model_handle.region_end) ? ASN_MODEL_DONE : ASN_LAYER1;
       ASN_LAYER1: begin
         nextState = (pkt.done) ? ASN_LAYER1_INTER : ASN_LAYER1;
       end
       ASN_LAYER1_INTER:
         nextState = ASN_LAYER2;
       ASN_LAYER2: begin
-        nextState = (lyr_opcode == 1) ? ASN_LAYERSW1 : ASN_LAYERNW1;
+        nextState = (lyr_opcode == 1) ? ASN_LAYERSW1 : ASN_LAYERNWINTER;
       end
       ASN_LAYERSW1: begin
         nextState = (pkt.done) ? ASN_LAYERSW1_INTER : ASN_LAYERSW1;
@@ -137,7 +138,9 @@ module DPR
       ASN_LAYERSW1_INTER:
         nextState = ASN_LAYERSW2;
       ASN_LAYERSW2:
-        nextState = (pkt.avail) ? ASN_LAYERW1 : ASN_LAYERSW2;
+        nextState = (pkt.avail) ? ASN_LAYERNWINTER : ASN_LAYERSW2;
+      ASN_LAYERWINTER:
+        nextState = ASN_LAYERW1;
       ASN_LAYERW1:
         nextState = ASN_LAYERW2;
       ASN_LAYERW2:
@@ -145,11 +148,15 @@ module DPR
       ASN_LAYERB1:
         nextState = ASN_LAYERB2;
       ASN_LAYERB2:
+        nextState = ASSIGN_MODEL;
+      ASN_LAYERNWINTER:
         nextState = ASN_LAYERNW1;
       ASN_LAYERNW1:
         nextState = ASN_LAYERNW2;
       ASN_LAYERNW2:
-        nextState = (model_handle.ptr == model_handle.region_end) ? ASN_MODEL_DONE : ASSIGN_MODEL;
+        nextState = (lyr_opcode == 1) ? ASN_LAYERWINTER : ASN_LAYERNW2INTER;
+      ASN_LAYERNW2INTER:
+        nextState = ASSIGN_MODEL;
       ASN_MODEL_DONE:
         nextState = (~pkt_avail) ? WAIT : ASN_MODEL_DONE;
       default: begin
@@ -342,6 +349,8 @@ module DPR
           lyr_insize <= pkt.data_load;
           pkt_dpr.ptr <= pkt_dpr.ptr + 1;
         end
+      end
+      ASN_LAYERWINTER: begin
         mm_o <= ASN_WEIGHT;
       end
       ASN_LAYERW1: begin
@@ -364,7 +373,7 @@ module DPR
         dpr_pass.region_begin <= model_handle.ptr;
         dpr_pass.region_end <= model_handle.ptr + 3 + lyr_outsize;
         model_handle.ptr <= model_handle.ptr + 3 + lyr_outsize;
-        pkt_dpr.ptr <= pkt_dpr.ptr + 3 + lyr_outsize;
+        pkt_dpr.ptr <= pkt_dpr.ptr + 2 + lyr_outsize;
         mm_o <= ASN_BGRAD;
       end
       ASN_LAYERB2: begin
@@ -372,6 +381,9 @@ module DPR
         dpr_pass.region_begin <= sdram_avail.region_begin;
         dpr_pass.region_end <= sdram_avail.region_begin + 3 + lyr_outsize;
         sdram_avail.region_begin <= sdram_avail.region_begin + 3 + lyr_outsize;
+        mm_o <= ASN_MODEL;
+      end
+      ASN_LAYERNWINTER: begin
         mm_o <= ASN_SCRATCH;
       end
       ASN_LAYERNW1: begin
@@ -387,6 +399,9 @@ module DPR
         dpr_pass.region_end <= sdram_avail.region_begin + 3 + lyr_insize;
         sdram_avail.region_begin <= sdram_avail.region_begin + 3 + lyr_insize;
         mm_o <= ASN_MODEL;
+      end
+      ASN_LAYERNW2INTER: begin
+
       end
       ASN_MODEL_DONE:
         done <= 1;
