@@ -12,9 +12,9 @@ module top();
 
 
   // DPR signals
-  mem_handle pkt,
-  logic pkt_avail,
-  logic dpr_done,
+  mem_handle pkt();
+  logic pkt_avail;
+  logic dpr_done;
 
   // DPR<->MM handshake
   mm_state mm_o;
@@ -54,10 +54,10 @@ module top();
     else begin
       if(pkt.r_en) begin
         pkt.data_load <= fake_pkt[pkt.ptr];
-        pkt.done <= 0;
+        pkt.done <= 1;
       end
       else
-        pkt.done = 0;
+        pkt.done <= 0;
     end
   end
 
@@ -71,7 +71,7 @@ module top();
 
   initial begin
     forever @(posedge clk)
-      $display("%s", mm.state);
+      $display("%s, %h", dpr.state, mmu.sdram.M[42:0]);
   end
 
   int i;
@@ -82,8 +82,16 @@ module top();
 
     pkt_avail <= 1;
     
-
     @(posedge dpr_done);
+    pkt_avail <= 0;
+
+    for(i = 0; i < 100; i = i + 1) @(posedge clk);
+
+    //@(posedge dpr.state);
+    //@(posedge dpr.state);
+    //for(i = 0; i < 100; i = i + 1) @(posedge clk);
+    //@(posedge dpr.state);
+    //@(posedge dpr_done);
 
     $finish;
   end

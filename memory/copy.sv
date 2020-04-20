@@ -11,9 +11,9 @@ module CopyRegion
   
   reg[31:0] r;
 
-  assign done = state == DONE;
-
   enum logic [2:0] {WAIT, READ, WRITE, DONE} state, nextState;
+
+  assign done = state == DONE;
 
   // Next State Logic
   always_comb begin
@@ -27,7 +27,7 @@ module CopyRegion
           if(d.ptr == d.region_end - 1)
             nextState = DONE;
           else
-            nextState = WRITE;
+            nextState = READ;
         end
         else
           nextState = WRITE;

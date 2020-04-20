@@ -101,7 +101,7 @@ module MMU
       else if(~mport_m9k_w_en[m9k_port_ctr] && ~mport_m9k_r_en[m9k_port_ctr])
         m9k_port_ctr <= m9k_port_ctr + 1;
       
-      if(sdram_port_ctr == num_ports - 1)
+      if(sdram_port_ctr == num_ports - 1 && ~mport_SDRAM_as[sdram_port_ctr])
         sdram_port_ctr <= 0;
       else if(~mport_SDRAM_as[sdram_port_ctr])
         sdram_port_ctr <= sdram_port_ctr + 1;
