@@ -24,7 +24,7 @@ module CopyRegion
         nextState = (a.done) ? WRITE : READ;
       WRITE: begin
         if(d.done) begin
-          if(d.ptr == d.region_end - 1)
+          if(a.ptr == a.region_end)
             nextState = DONE;
           else
             nextState = READ;
