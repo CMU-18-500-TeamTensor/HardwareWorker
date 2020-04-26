@@ -25,7 +25,7 @@ module DPR
                     ASN_LAYERSW1_INTER, ASN_LAYERW1, ASN_LAYERW2, ASN_LAYERB1, ASN_LAYERB2, 
                     ASN_LAYERNW1, ASN_LAYERNW2, ASN_MODEL_DONE, ASSIGN_DP, ASN_LAYERNWINTER,
                     ASN_LAYERWINTER, ASN_LAYERNW2INTER, ASN_MSE1, ASN_MSE2, ASN_MSE3,
-                    ASN_MSE4} state, nextState;
+                    ASN_MSE4, ASN_INPUTS, ASN_OUTPUTS, ASN_SAMPLE_SPIN} state, nextState;
 
   enum logic [1:0] {M_WAIT, M_READ, M_COPY, M_UPDATE} memState, nextMemState;
 
@@ -113,7 +113,7 @@ module DPR
             OP_ASN_MD: nextState = COPY_MODEL;
             OP_ASN_DP: nextState = ASSIGN_DP;
             OP_M_FULL: nextState = RD_MFULL;
-            OP_BATCH:  nextState = MM_COPY;
+            OP_BATCH:  nextState = ASN_INPUTS;
           endcase
         end
       end
@@ -124,7 +124,7 @@ module DPR
           nextState = COPY_MODEL;
       end
       ASSIGN_MODEL:
-        nextState = (model_handle.ptr == model_handle.region_end) ? ASN_MSE1 : ASN_LAYER1;
+        nextState = (model_handle.ptr == model_handle.region_end-1) ? ASN_MSE1 : ASN_LAYER1;
       ASN_LAYER1: begin
         nextState = (pkt.done) ? ASN_LAYER1_INTER : ASN_LAYER1;
       end
@@ -168,6 +168,12 @@ module DPR
         nextState = ASN_MODEL_DONE;
       ASN_MODEL_DONE:
         nextState = (~pkt_avail) ? WAIT : ASN_MODEL_DONE;
+      ASN_INPUTS:
+        nextState = ASN_OUTPUTS;
+      ASN_OUTPUTS:
+        nextState = ASN_SAMPLE_SPIN;
+      ASN_SAMPLE_SPIN:
+        nextState = ASN_MODEL_DONE;
       default: begin
         nextState = WAIT;
       end
@@ -332,6 +338,7 @@ module DPR
           asn_opcode <= LINEAR;
         end
         else if(lyr_opcode == 3) begin // ReLU layer
+          pkt_dpr.ptr <= pkt_dpr.ptr + 1;  // Move pointer to next layer
           lyr_insize <= lyr_outsize;   // input size is output size of last layer
                                        // output size remains the same
           asn_opcode <= RELU;
@@ -436,6 +443,24 @@ module DPR
       ASN_MODEL_DONE: begin
         done <= 1;
         mm_o <= mm_state'(WAIT);
+      end
+      ASN_INPUTS: begin
+        mm_o <= mm_state'(ASN_INPUT);
+      end
+      ASN_OUTPUTS: begin
+        // Input ptr
+        dpr_pass.region_begin <= 0;
+        dpr_pass.region_begin[`ADDR_SIZE-1] <= 1;
+        dpr_pass.region_end <= 22;
+        dpr_pass.region_end[`ADDR_SIZE-1] <= 1;
+        mm_o <= mm_state'(ASN_OUTPUT);
+      end
+      ASN_SAMPLE_SPIN: begin
+        // Output ptr
+        dpr_pass.region_begin <= 22;
+        dpr_pass.region_begin[`ADDR_SIZE-1] <= 1;
+        dpr_pass.region_end <= 34;
+        dpr_pass.region_end[`ADDR_SIZE-1] <= 1;
       end
       endcase
 
